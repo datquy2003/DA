@@ -40,6 +40,9 @@ jspm_packages/
 # .env.development.local
 # .env.local
 
+# key firebase admin file
+serviceAccountKey.json
+
 # Next.js build output
 .next/
 out/
