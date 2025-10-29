@@ -281,3 +281,14 @@ CREATE TABLE CVViews (
     CONSTRAINT FK_CVViews_Employer FOREIGN KEY (EmployerID) REFERENCES Users(FirebaseUserID)
 );
 GO
+
+-- Thêm dữ liệu cho bảng Roles
+INSERT INTO Roles (RoleName) VALUES 
+('Admin'),        -- 1
+('SuperAdmin'),   -- 2
+('Employer'),     -- 3
+('Candidate');    -- 4
+GO
+
+SELECT * FROM Roles ORDER BY RoleID;
+GO
