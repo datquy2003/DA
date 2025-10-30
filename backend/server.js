@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import sql from "mssql";
 import { sqlConfig } from "./src/config/db.js";
+import authRoutes from "./src/routes/authRoutes.js";
 
 dotenv.config();
 
@@ -13,15 +14,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use("/api/auth", authRoutes);
+
 app.get("/api/test", (req, res) => {
   res.status(200).json({ message: "Backend đã kết nối thành công!" });
 });
 
-// TODO: Import và sử dụng các routes (vd: /api/jobs, /api/users)
-// import jobRoutes from './src/routes/jobRoutes.js';
-// app.use('/api/jobs', jobRoutes);
-
-// ----- Khởi động Server và Kết nối DB -----
 app.listen(port, async () => {
   try {
     await sql.connect(sqlConfig);
