@@ -1,29 +1,58 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ChooseRole from "./pages/ChooseRole";
+
+const Home = () => {
+  const { appUser, logout } = useAuth();
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold">Trang chủ</h1>
+      <p>Chào mừng, {appUser?.DisplayName}!</p>
+      <p>Vai trò của bạn là: {appUser?.RoleID}</p>
+      <button
+        onClick={logout}
+        className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+      >
+        Đăng xuất
+      </button>
+    </div>
+  );
+};
 
 function App() {
-  const [message, setMessage] = useState("Đang tải...");
+  const { firebaseUser, appUser } = useAuth();
 
-  const apiUrl = process.env.REACT_APP_API_URL;
+  const isAuthenticated = firebaseUser && appUser;
+  const isNewUser = firebaseUser && !appUser;
 
-  useEffect(() => {
-    axios
-      .get(`${apiUrl}/api/test`)
-      .then((response) => {
-        setMessage(response.data.message);
-      })
-      .catch((error) => {
-        console.error("Lỗi khi gọi API:", error);
-        setMessage("Kết nối đến Backend thất bại!");
-      });
-  }, [apiUrl]);
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h1>Trang web Tìm kiếm việc làm</h1>
-      <p>
-        Trạng thái kết nối: <strong>{message}</strong>
-      </p>
-    </div>
+    <Routes>
+      <Route
+        path="/login"
+        element={!firebaseUser ? <Login /> : <Navigate to="/" />}
+      />
+      <Route
+        path="/register"
+        element={!firebaseUser ? <Register /> : <Navigate to="/" />}
+      />
+      <Route
+        path="/choose-role"
+        element={isNewUser ? <ChooseRole /> : <Navigate to="/" />}
+      />
+      <Route
+        path="/"
+        element={isAuthenticated ? <Home /> : <Navigate to="/login" />}
+      />
+
+      <Route
+        path="*"
+        element={<Navigate to={isAuthenticated ? "/" : "/login"} />}
+      />
+    </Routes>
   );
 }
 
