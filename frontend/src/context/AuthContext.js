@@ -43,7 +43,11 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           if (error.response && error.response.status === 404) {
             setAppUser(null);
-            navigate("/choose-role");
+            if (currentPath !== "/choose-role") {
+              navigate("/choose-role");
+            } else {
+              console.error("Lỗi khi lấy thông tin user:", error);
+            }
           }
         }
       } else {
@@ -89,6 +93,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     firebaseUser,
     appUser,
+    setAppUser,
     loading,
     loginLocal,
     registerLocal,
