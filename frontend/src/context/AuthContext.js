@@ -76,14 +76,26 @@ export const AuthProvider = ({ children }) => {
     );
   };
 
-  const loginWithGoogle = () => {
+  const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      if (error.code !== "auth/popup-closed-by-user") {
+        console.error("Lỗi đăng nhập Google:", error);
+      }
+    }
   };
 
-  const loginWithFacebook = () => {
+  const loginWithFacebook = async () => {
     const provider = new FacebookAuthProvider();
-    return signInWithPopup(auth, provider);
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      if (error.code !== "auth/popup-closed-by-user") {
+        console.error("Lỗi đăng nhập Facebook:", error);
+      }
+    }
   };
 
   const logout = () => {
