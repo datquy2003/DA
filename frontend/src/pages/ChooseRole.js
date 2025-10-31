@@ -7,7 +7,7 @@ const ROLE_CANDIDATE = 4;
 const ROLE_EMPLOYER = 3;
 
 const ChooseRole = () => {
-  const { firebaseUser, logout } = useAuth();
+  const { firebaseUser, logout, manualReloadFirebaseUser } = useAuth();
   // eslint-disable-next-line no-unused-vars
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -36,13 +36,30 @@ const ChooseRole = () => {
       const token = await firebaseUser.getIdToken();
       await authApi.registerInDb(token, roleID);
 
-      alert("Đăng ký vai trò thành công! Đang tải lại trang...");
       window.location.reload();
     } catch (error) {
       console.error(error);
       setError("Đã xảy ra lỗi khi chọn vai trò. Vui lòng thử lại.");
       setLoading(false);
     }
+  };
+
+  const handleVerificationCheck = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const refreshedUser = await manualReloadFirebaseUser();
+
+      if (!refreshedUser.emailVerified) {
+        setError(
+          "Email vẫn chưa được xác thực. Vui lòng kiểm tra lại hộp thư."
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Lỗi khi kiểm tra xác thực. Vui lòng thử lại.");
+    }
+    setLoading(false);
   };
 
   return (
@@ -63,6 +80,15 @@ const ChooseRole = () => {
             >
               <span className="font-medium">Cảnh báo!</span> Bạn cần xác thực
               email trước khi tiếp tục. Vui lòng kiểm tra hộp thư đến của bạn.
+              <button
+                onClick={handleVerificationCheck}
+                disabled={loading}
+                className="mt-3 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out font-semibold text-sm disabled:opacity-50"
+              >
+                {loading
+                  ? "Đang kiểm tra..."
+                  : "Tôi đã xác thực. Kiểm tra lại."}
+              </button>
             </div>
           )}
 

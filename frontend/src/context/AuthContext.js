@@ -90,6 +90,18 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
+  const manualReloadFirebaseUser = async () => {
+    if (auth.currentUser) {
+      try {
+        await auth.currentUser.reload();
+        await auth.currentUser.getIdToken(true);
+        return auth.currentUser;
+      } catch (error) {
+        console.error("Lỗi khi reload user:", error);
+      }
+    }
+  };
+
   const value = {
     firebaseUser,
     appUser,
@@ -100,6 +112,7 @@ export const AuthProvider = ({ children }) => {
     loginWithGoogle,
     loginWithFacebook,
     logout,
+    manualReloadFirebaseUser,
   };
 
   return (
