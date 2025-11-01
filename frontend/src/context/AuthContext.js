@@ -8,6 +8,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   FacebookAuthProvider,
+  fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import { auth } from "../firebase.config.js";
 import { authApi } from "../api/authApi.js";
@@ -60,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       }
       setLoading(false);
     });
-    return unsubscribe;
+    return () => unsubscribe();
   }, [navigate, location]);
 
   const loginLocal = (email, password) => {
@@ -71,7 +72,6 @@ export const AuthProvider = ({ children }) => {
     return createUserWithEmailAndPassword(auth, email, password).then(
       (userCredential) => {
         sendEmailVerification(userCredential.user);
-        alert("Đăng ký thành công! Vui lòng kiểm tra email để xác thực.");
       }
     );
   };
@@ -92,7 +92,25 @@ export const AuthProvider = ({ children }) => {
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
-      if (error.code !== "auth/popup-closed-by-user") {
+      if (error.code === "auth/popup-closed-by-user") {
+        return;
+      }
+
+      if (error.code === "auth/account-exists-with-different-credential") {
+        try {
+          const email = error.customData.email;
+          const methods = await fetchSignInMethodsForEmail(auth, email);
+          if (!methods || methods.length === 0) {
+            alert(
+              "Email này hiện tại đã được chuyển giao sang cho google. Vui lòng đăng nhập bằng google."
+            );
+            return;
+          }
+        } catch (fetchError) {
+          console.error("Lỗi khi kiểm tra provider:", fetchError);
+          alert("Đã xảy ra lỗi. Vui lòng thử lại.");
+        }
+      } else {
         console.error("Lỗi đăng nhập Facebook:", error);
       }
     }
