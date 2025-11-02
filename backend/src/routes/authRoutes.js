@@ -14,6 +14,9 @@ router.get("/me", checkAuth, async (req, res) => {
     const firebaseUid = req.firebaseUser.uid;
     const firebaseIdentities = req.firebaseUser.firebase.identities || {};
     const firebaseProviderIds = Object.keys(firebaseIdentities);
+    const isVerifiedInToken = !!req.firebaseUser.email_verified;
+    const hasFacebook = firebaseProviderIds.includes("facebook.com");
+    const finalIsVerified = isVerifiedInToken || hasFacebook;
 
     const pool = await sql.connect(sqlConfig);
     const transaction = new sql.Transaction(pool);
@@ -31,6 +34,8 @@ router.get("/me", checkAuth, async (req, res) => {
           .status(404)
           .json({ message: "User chưa có trong CSDL. Cần đăng ký role." });
       }
+
+      const userFromDB = userResult.recordset[0];
 
       await transaction
         .request()
@@ -69,6 +74,9 @@ router.get("/me", checkAuth, async (req, res) => {
       ) {
         providersChanged = true;
       }
+
+      const isVerifiedInDB = userFromDB.IsVerified;
+      const verificationChanged = isVerifiedInDB !== finalIsVerified;
 
       for (const sqlProviderId of sqlProviderIds) {
         if (!providersToSync.includes(sqlProviderId)) {
@@ -110,17 +118,18 @@ router.get("/me", checkAuth, async (req, res) => {
         }
       }
 
-      if (providersChanged) {
+      if (providersChanged || verificationChanged) {
         await transaction
           .request()
           .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+          .input("IsVerified", sql.Bit, finalIsVerified)
           .query(
-            "UPDATE Users SET UpdatedAt = GETDATE() WHERE FirebaseUserID = @FirebaseUserID"
+            "UPDATE Users SET UpdatedAt = GETDATE(), IsVerified = @IsVerified WHERE FirebaseUserID = @FirebaseUserID"
           );
       }
 
       await transaction.commit();
-      res.status(200).json(userResult.recordset[0]);
+      res.status(200).json(userFromDB);
     } catch (err) {
       await transaction.rollback();
       throw err;
@@ -134,10 +143,13 @@ router.get("/me", checkAuth, async (req, res) => {
 
 router.post("/register", checkAuth, async (req, res) => {
   const { roleID } = req.body;
-  const { uid, email, name, firebase } = req.firebaseUser;
+  const { uid, email, name, firebase, email_verified } = req.firebaseUser;
   const firebaseIdentities = firebase.identities || {};
   const firebaseProviderIds = Object.keys(firebaseIdentities);
 
+  const isVerifiedInToken = !!email_verified;
+  const hasFacebook = firebaseProviderIds.includes("facebook.com");
+  const finalIsVerified = isVerifiedInToken || hasFacebook;
   const hasPasswordInToken = firebaseProviderIds.includes("password");
   const hasOAuthInToken = firebaseProviderIds.some(
     (p) => p === "google.com" || p === "facebook.com"
@@ -163,9 +175,10 @@ router.post("/register", checkAuth, async (req, res) => {
         .input("FirebaseUserID", sql.NVarChar, uid)
         .input("Email", sql.NVarChar, email)
         .input("DisplayName", sql.NVarChar, name || "Người dùng mới")
-        .input("RoleID", sql.Int, roleID).query(`
-          INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, CreatedAt, UpdatedAt)
-          VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, GETDATE(), GETDATE());
+        .input("RoleID", sql.Int, roleID)
+        .input("IsVerified", sql.Bit, finalIsVerified).query(`
+          INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, CreatedAt, UpdatedAt, IsVerified)
+          VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, GETDATE(), GETDATE(), @IsVerified);
           SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID;
         `);
 
