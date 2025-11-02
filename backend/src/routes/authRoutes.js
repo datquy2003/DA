@@ -32,6 +32,13 @@ router.get("/me", checkAuth, async (req, res) => {
           .json({ message: "User chưa có trong CSDL. Cần đăng ký role." });
       }
 
+      await transaction
+        .request()
+        .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+        .query(
+          "UPDATE Users SET LastLoginAt = GETDATE() WHERE FirebaseUserID = @FirebaseUserID"
+        );
+
       const sqlResult = await transaction
         .request()
         .input("FirebaseUserID", sql.NVarChar, firebaseUid)
@@ -50,6 +57,17 @@ router.get("/me", checkAuth, async (req, res) => {
 
       if (hasOAuthInToken && !hasPasswordInDB) {
         providersToSync = providersToSync.filter((p) => p !== "email");
+      }
+
+      let providersChanged = false;
+      const sortedSqlProviders = [...sqlProviderIds].sort();
+      const sortedSyncProviders = [...providersToSync].sort();
+
+      if (
+        sortedSqlProviders.length !== sortedSyncProviders.length ||
+        sortedSqlProviders.join(",") !== sortedSyncProviders.join(",")
+      ) {
+        providersChanged = true;
       }
 
       for (const sqlProviderId of sqlProviderIds) {
@@ -84,12 +102,21 @@ router.get("/me", checkAuth, async (req, res) => {
               USING (VALUES (@FirebaseUserID, @ProviderID, @ProviderUID)) AS source (FirebaseUserID, ProviderID, ProviderUID)
               ON (target.FirebaseUserID = source.FirebaseUserID AND target.ProviderID = source.ProviderID AND target.ProviderUID = source.ProviderUID)
               WHEN MATCHED THEN
-                UPDATE SET LinkedAt = GETDATE() -- Chỉ cập nhật thời gian
+                UPDATE SET LinkedAt = GETDATE()
               WHEN NOT MATCHED BY TARGET THEN
                 INSERT (FirebaseUserID, ProviderID, ProviderUID, LinkedAt)
                 VALUES (source.FirebaseUserID, source.ProviderID, source.ProviderUID, GETDATE());
             `);
         }
+      }
+
+      if (providersChanged) {
+        await transaction
+          .request()
+          .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+          .query(
+            "UPDATE Users SET UpdatedAt = GETDATE() WHERE FirebaseUserID = @FirebaseUserID"
+          );
       }
 
       await transaction.commit();
@@ -137,8 +164,8 @@ router.post("/register", checkAuth, async (req, res) => {
         .input("Email", sql.NVarChar, email)
         .input("DisplayName", sql.NVarChar, name || "Người dùng mới")
         .input("RoleID", sql.Int, roleID).query(`
-          INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID)
-          VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID);
+          INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, CreatedAt, UpdatedAt)
+          VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, GETDATE(), GETDATE());
           SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID;
         `);
 
