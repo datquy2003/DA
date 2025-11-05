@@ -9,6 +9,7 @@ import {
   GoogleAuthProvider,
   FacebookAuthProvider,
   fetchSignInMethodsForEmail,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../firebase.config.js";
 import { authApi } from "../api/authApi.js";
@@ -54,7 +55,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setFirebaseUser(null);
         setAppUser(null);
-        const publicPages = ["/login", "/register"];
+        const publicPages = ["/login", "/register", "/forgot-password"];
         if (!publicPages.includes(currentPath)) {
           navigate("/login");
         }
@@ -116,6 +117,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendPasswordReset = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
+
   const logout = () => {
     return signOut(auth);
   };
@@ -143,6 +148,7 @@ export const AuthProvider = ({ children }) => {
     loginWithFacebook,
     logout,
     manualReloadFirebaseUser,
+    sendPasswordReset,
   };
 
   return (

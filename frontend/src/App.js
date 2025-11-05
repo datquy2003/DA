@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ChooseRole from "./pages/ChooseRole";
+import ForgotPassword from "./pages/ForgotPassword";
 
 const Home = () => {
   const { appUser, logout } = useAuth();
@@ -42,6 +43,10 @@ function App() {
       <Route
         path="/choose-role"
         element={isNewUser ? <ChooseRole /> : <Navigate to="/" />}
+      />
+      <Route
+        path="/forgot-password"
+        element={!firebaseUser ? <ForgotPassword /> : <Navigate to="/" />}
       />
       <Route
         path="/"
