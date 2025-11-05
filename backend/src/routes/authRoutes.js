@@ -2,6 +2,7 @@ import express from "express";
 import sql from "mssql";
 import { sqlConfig } from "../config/db.js";
 import { checkAuth } from "../middleware/authMiddleware.js";
+import admin from "../config/firebaseAdmin.js";
 
 const router = express.Router();
 
@@ -12,8 +13,25 @@ const getUidsForProvider = (firebaseIdentities, providerId) => {
 router.get("/me", checkAuth, async (req, res) => {
   try {
     const firebaseUid = req.firebaseUser.uid;
-    const firebaseIdentities = req.firebaseUser.firebase.identities || {};
-    const firebaseProviderIds = Object.keys(firebaseIdentities);
+    const firebaseUserRecord = await admin.auth().getUser(firebaseUid);
+
+    const firebaseIdentities = firebaseUserRecord.providerData.reduce(
+      (acc, provider) => {
+        acc[provider.providerId] = acc[provider.providerId] || [];
+        acc[provider.providerId].push(provider.uid);
+        return acc;
+      },
+      {}
+    );
+
+    const passwordUpdatedAtMs = firebaseUserRecord.metadata.passwordUpdatedAt
+      ? Date.parse(firebaseUserRecord.metadata.passwordUpdatedAt)
+      : null;
+
+    const firebaseProviderIds = Object.keys(firebaseIdentities).filter(
+      (p) => p !== "password"
+    );
+
     const isVerifiedInToken = !!req.firebaseUser.email_verified;
     const hasFacebook = firebaseProviderIds.includes("facebook.com");
     const finalIsVerified = isVerifiedInToken || hasFacebook;
@@ -36,6 +54,9 @@ router.get("/me", checkAuth, async (req, res) => {
       }
 
       const userFromDB = userResult.recordset[0];
+      const updatedAtInDB = userFromDB.UpdatedAt
+        ? new Date(userFromDB.UpdatedAt).getTime()
+        : 0;
 
       await transaction
         .request()
@@ -78,6 +99,11 @@ router.get("/me", checkAuth, async (req, res) => {
       const isVerifiedInDB = userFromDB.IsVerified;
       const verificationChanged = isVerifiedInDB !== finalIsVerified;
 
+      let passwordChanged = false;
+      if (passwordUpdatedAtMs && passwordUpdatedAtMs > updatedAtInDB) {
+        passwordChanged = true;
+      }
+
       for (const sqlProviderId of sqlProviderIds) {
         if (!providersToSync.includes(sqlProviderId)) {
           if (
@@ -118,7 +144,7 @@ router.get("/me", checkAuth, async (req, res) => {
         }
       }
 
-      if (providersChanged || verificationChanged) {
+      if (providersChanged || verificationChanged || passwordChanged) {
         await transaction
           .request()
           .input("FirebaseUserID", sql.NVarChar, firebaseUid)
