@@ -50,13 +50,21 @@ function App() {
       />
       <Route
         path="/"
+        element={
+          isAuthenticated ? (
+            <Home /> // 1. User cũ: Cho vào Home
+          ) : isNewUser ? (
+            <Navigate to="/choose-role" /> // 2. User mới: Đẩy về chọn role
+          ) : (
+            <Navigate to="/login" /> // 3. Chưa đăng nhập: Đẩy về login
+          )
+        }
+      />
+      <Route
+        path="/"
         element={isAuthenticated ? <Home /> : <Navigate to="/login" />}
       />
-
-      <Route
-        path="*"
-        element={<Navigate to={isAuthenticated ? "/" : "/login"} />}
-      />
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }

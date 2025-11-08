@@ -23,47 +23,40 @@ export const AuthProvider = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState(null);
   const [appUser, setAppUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
-      const currentPath = location.pathname;
 
       if (user) {
         setFirebaseUser(user);
-
         const token = await user.getIdToken();
-
         try {
+          // Lấy user từ backend
           const response = await authApi.getMe(token);
           setAppUser(response.data);
-          if (currentPath === "/login" || currentPath === "/register") {
-            navigate("/");
-          }
         } catch (error) {
           if (error.response && error.response.status === 404) {
+            // User đã auth với Firebase nhưng chưa có trong DB (user mới)
             setAppUser(null);
-            if (currentPath !== "/choose-role") {
-              navigate("/choose-role");
-            } else {
-              console.error("Lỗi khi lấy thông tin user:", error);
-            }
+          } else {
+            // Lỗi 500 hoặc lỗi mạng, coi như logout
+            console.error("Lỗi nghiêm trọng khi gọi getMe:", error);
+            setFirebaseUser(null);
+            setAppUser(null);
           }
         }
       } else {
+        // Không có user (đã logout)
         setFirebaseUser(null);
         setAppUser(null);
-        const publicPages = ["/login", "/register", "/forgot-password"];
-        if (!publicPages.includes(currentPath)) {
-          navigate("/login");
-        }
       }
       setLoading(false);
     });
+
+    // Cleanup listener khi component unmount
     return () => unsubscribe();
-  }, [navigate, location]);
+  }, []);
 
   const loginLocal = (email, password) => {
     return signInWithEmailAndPassword(auth, email, password);
