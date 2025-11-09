@@ -13,7 +13,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase.config.js";
 import { authApi } from "../api/authApi.js";
-import { useNavigate, useLocation } from "react-router-dom";
 
 const AuthContext = createContext();
 
@@ -32,29 +31,24 @@ export const AuthProvider = ({ children }) => {
         setFirebaseUser(user);
         const token = await user.getIdToken();
         try {
-          // Lấy user từ backend
           const response = await authApi.getMe(token);
           setAppUser(response.data);
         } catch (error) {
           if (error.response && error.response.status === 404) {
-            // User đã auth với Firebase nhưng chưa có trong DB (user mới)
             setAppUser(null);
           } else {
-            // Lỗi 500 hoặc lỗi mạng, coi như logout
             console.error("Lỗi nghiêm trọng khi gọi getMe:", error);
             setFirebaseUser(null);
             setAppUser(null);
           }
         }
       } else {
-        // Không có user (đã logout)
         setFirebaseUser(null);
         setAppUser(null);
       }
       setLoading(false);
     });
 
-    // Cleanup listener khi component unmount
     return () => unsubscribe();
   }, []);
 
