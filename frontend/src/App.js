@@ -52,11 +52,11 @@ function App() {
         path="/"
         element={
           isAuthenticated ? (
-            <Home /> // 1. User cũ: Cho vào Home
+            <Home />
           ) : isNewUser ? (
-            <Navigate to="/choose-role" /> // 2. User mới: Đẩy về chọn role
+            <Navigate to="/choose-role" />
           ) : (
-            <Navigate to="/login" /> // 3. Chưa đăng nhập: Đẩy về login
+            <Navigate to="/login" />
           )
         }
       />
