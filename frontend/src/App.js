@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ChooseRole from "./pages/ChooseRole";
 import ForgotPassword from "./pages/ForgotPassword";
+import MainLayout from "./components/MainLayout";
 
 const Home = () => {
   const { appUser, logout } = useAuth();
@@ -23,6 +24,15 @@ const Home = () => {
     </div>
   );
 };
+const CvManagement = () => <div>Trang Quản lý CV</div>;
+const AppliedJobs = () => <div>Trang Việc đã ứng tuyển</div>;
+const FavoriteJobs = () => <div>Trang Việc yêu thích</div>;
+const BlockedCompanies = () => <div>Trang Công ty đã chặn</div>;
+const Subscription = () => <div>Trang Gói dịch vụ</div>;
+const Messages = () => <div>Trang Nhắn tin</div>;
+const Notifications = () => <div>Trang Thông báo</div>;
+const ProfileEdit = () => <div>Trang Chỉnh sửa thông tin</div>;
+const VipUpgrade = () => <div>Trang Nâng cấp VIP</div>;
 
 function App() {
   const { firebaseUser, appUser } = useAuth();
@@ -62,8 +72,30 @@ function App() {
       />
       <Route
         path="/"
-        element={isAuthenticated ? <Home /> : <Navigate to="/login" />}
-      />
+        element={
+          isAuthenticated ? (
+            <MainLayout />
+          ) : isNewUser ? (
+            <Navigate to="/choose-role" />
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
+      >
+        <Route index element={<Home />} />
+        <Route path="candidate/cvs" element={<CvManagement />} />
+        <Route path="candidate/applied-jobs" element={<AppliedJobs />} />
+        <Route path="candidate/favorite-jobs" element={<FavoriteJobs />} />
+        <Route
+          path="candidate/blocked-companies"
+          element={<BlockedCompanies />}
+        />
+        <Route path="candidate/subscription" element={<Subscription />} />
+        <Route path="messages" element={<Messages />} />
+        <Route path="notifications" element={<Notifications />} />
+        <Route path="profile-edit" element={<ProfileEdit />} />
+        <Route path="vip-upgrade" element={<VipUpgrade />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
