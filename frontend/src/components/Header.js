@@ -42,7 +42,7 @@ const HeaderNavLink = ({ to, children }) => {
 
 const ProfileMenu = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { appUser, logout } = useAuth();
+  const { appUser, logout, firebaseUser } = useAuth();
   const dropdownRef = useRef(null);
   const isAdmin = appUser?.RoleID === 1 || appUser?.RoleID === 2;
 
@@ -86,7 +86,15 @@ const ProfileMenu = () => {
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 focus:outline-none"
         >
-          <FaUserCircle size={28} />
+          {firebaseUser?.photoURL ? (
+            <img
+              src={firebaseUser.photoURL}
+              alt="Avatar"
+              className="w-7 h-7 rounded-full object-cover"
+            />
+          ) : (
+            <FaUserCircle size={28} />
+          )}
           <span className="font-medium text-sm hidden md:block">
             {appUser?.DisplayName || "Tài khoản"}
           </span>
