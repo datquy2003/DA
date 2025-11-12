@@ -44,6 +44,7 @@ const ProfileMenu = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { appUser, logout } = useAuth();
   const dropdownRef = useRef(null);
+  const isAdmin = appUser?.RoleID === 1 || appUser?.RoleID === 2;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -106,13 +107,15 @@ const ProfileMenu = () => {
             >
               <FiEdit className="mr-2" /> Chỉnh sửa thông tin
             </Link>
-            <Link
-              to="/vip-upgrade"
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              onClick={() => setIsDropdownOpen(false)}
-            >
-              <FiStar className="mr-2" /> Nâng cấp VIP
-            </Link>
+            {!isAdmin && (
+              <Link
+                to="/vip-upgrade"
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                onClick={() => setIsDropdownOpen(false)}
+              >
+                <FiStar className="mr-2" /> Nâng cấp VIP
+              </Link>
+            )}
             <div className="border-t my-1"></div>
             <button
               onClick={handleLogout}
@@ -174,11 +177,26 @@ const EmployerHeader = () => {
           <HeaderNavLink to="/employer/search-candidates">
             <FiSearch className="mr-1.5" /> Tìm kiếm
           </HeaderNavLink>
-
           <HeaderNavLink to="/employer/subscription">
             <FiStar className="mr-1.5" /> Gói VIP
           </HeaderNavLink>
         </div>
+        <ProfileMenu />
+      </div>
+    </nav>
+  );
+};
+
+const AdminHeader = () => {
+  return (
+    <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+      <div className="flex justify-between items-center h-16 px-4">
+        <div className="flex space-x-6 h-full">
+          <HeaderNavLink to="/">
+            <FiHome className="mr-1.5" /> Trang chủ
+          </HeaderNavLink>
+        </div>
+
         <ProfileMenu />
       </div>
     </nav>
@@ -193,6 +211,10 @@ const Header = () => {
       return <CandidateHeader />;
     case 3:
       return <EmployerHeader />;
+    case 2:
+      return <AdminHeader />;
+    case 1:
+      return <AdminHeader />;
     default:
       return null;
   }
