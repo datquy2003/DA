@@ -15,13 +15,11 @@ const addAuthToken = (token) => {
 };
 
 export const authApi = {
-  // GET /api/auth/me
   getMe: async (token) => {
     addAuthToken(token);
     return await apiClient.get("/api/auth/me");
   },
 
-  // POST /api/auth/register
   registerInDb: async (token, roleID) => {
     addAuthToken(token);
     return await apiClient.post("/api/auth/register", { roleID });
