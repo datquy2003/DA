@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { getImageUrl } from "../utils/urlHelper";
 
 import {
   FiBell,
@@ -66,6 +67,10 @@ const ProfileMenu = () => {
     }
   };
 
+  const photoToDisplay = getImageUrl(
+    appUser?.PhotoURL || firebaseUser?.photoURL
+  );
+
   return (
     <div className="flex items-center space-x-5">
       <Link
@@ -86,14 +91,14 @@ const ProfileMenu = () => {
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center space-x-2 text-gray-700 hover:text-blue-600 focus:outline-none"
         >
-          {firebaseUser?.photoURL ? (
+          {photoToDisplay ? (
             <img
-              src={firebaseUser.photoURL}
+              src={photoToDisplay}
               alt="Avatar"
               className="w-7 h-7 rounded-full object-cover"
             />
           ) : (
-            <FaUserCircle size={28} />
+            <FaUserCircle size={28} className="text-gray-400" />
           )}
           <span className="font-medium text-sm hidden md:block">
             {appUser?.DisplayName || "Tài khoản"}

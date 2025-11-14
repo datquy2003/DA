@@ -169,7 +169,8 @@ router.get("/me", checkAuth, async (req, res) => {
 
 router.post("/register", checkAuth, async (req, res) => {
   const { roleID } = req.body;
-  const { uid, email, name, firebase, email_verified } = req.firebaseUser;
+  const { uid, email, name, firebase, email_verified, photoURL } =
+    req.firebaseUser;
   const firebaseIdentities = firebase.identities || {};
   const firebaseProviderIds = Object.keys(firebaseIdentities);
 
@@ -202,6 +203,7 @@ router.post("/register", checkAuth, async (req, res) => {
         .input("Email", sql.NVarChar, email)
         .input("DisplayName", sql.NVarChar, name || "Người dùng mới")
         .input("RoleID", sql.Int, roleID)
+        .input("PhotoURL", sql.NVarChar, photoURL || null)
         .input("IsVerified", sql.Bit, finalIsVerified).query(`
           INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, CreatedAt, UpdatedAt, IsVerified)
           VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, GETDATE(), GETDATE(), @IsVerified);

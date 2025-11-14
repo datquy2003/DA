@@ -1,0 +1,29 @@
+import apiClient from "./apiClient";
+
+const updateBaseProfile = (formData) => {
+  return apiClient.put("/users/me/base", formData);
+};
+
+const getCandidateProfile = () => {
+  return apiClient.get("/candidates/me");
+};
+
+const updateCandidateProfile = (data) => {
+  return apiClient.put("/candidates/me", data);
+};
+
+const getCompanyProfile = () => {
+  return apiClient.get("/companies/me");
+};
+
+const updateCompanyProfile = (data) => {
+  return apiClient.put("/companies/me", data);
+};
+
+export const profileApi = {
+  updateBaseProfile,
+  getCandidateProfile,
+  updateCandidateProfile,
+  getCompanyProfile,
+  updateCompanyProfile,
+};
