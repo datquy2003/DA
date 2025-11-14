@@ -5,11 +5,6 @@ import { checkAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * @route   GET /api/candidates/me
- * @desc    Lấy hồ sơ ứng viên
- * @access  Private
- */
 router.get("/me", checkAuth, async (req, res) => {
   const firebaseUid = req.firebaseUser.uid;
 
@@ -33,11 +28,6 @@ router.get("/me", checkAuth, async (req, res) => {
   }
 });
 
-/**
- * @route   PUT /api/candidates/me
- * @desc    Cập nhật hoặc tạo mới (UPSERT) hồ sơ ứng viên
- * @access  Private
- */
 router.put("/me", checkAuth, async (req, res) => {
   const firebaseUid = req.firebaseUser.uid;
   const {
