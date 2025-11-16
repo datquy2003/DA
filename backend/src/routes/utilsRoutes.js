@@ -1,17 +1,9 @@
 import express from "express";
 import { checkAuth } from "../middleware/authMiddleware.js";
-import axios from "axios"; // <-- Import axios
+import axios from "axios";
 
 const router = express.Router();
 
-// KHÔNG CẦN Google Maps Client nữa
-// const mapsClient = new Client({});
-
-/**
- * @route   POST /api/utils/geocode
- * @desc    Chuyển địa chỉ (string) thành kinh độ, vĩ độ (DÙNG OPENSTREETMAP)
- * @access  Private
- */
 router.post("/geocode", checkAuth, async (req, res) => {
   const { address } = req.body;
 
@@ -19,12 +11,9 @@ router.post("/geocode", checkAuth, async (req, res) => {
     return res.status(400).json({ message: "Vui lòng cung cấp địa chỉ." });
   }
 
-  // --- THAY THẾ LOGIC CỦA GOOGLE BẰNG NOMINATIM ---
   try {
-    // Mã hóa địa chỉ để dùng trong URL
     const encodedAddress = encodeURIComponent(address);
 
-    // URL của API Nominatim
     const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
 
     const response = await axios.get(nominatimUrl, {
@@ -43,7 +32,7 @@ router.post("/geocode", checkAuth, async (req, res) => {
 
       res.status(200).json(location);
     } else {
-      res.status(404).json({ message: "Không tìm thấy địa chỉ." });
+      res.status(200).json({ lat: null, lng: null });
     }
   } catch (error) {
     console.error("Lỗi Nominatim Geocoding:", error.message);

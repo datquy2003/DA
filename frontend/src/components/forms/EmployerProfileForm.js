@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { profileApi } from "../../api/profileApi";
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../utils/urlHelper";
+import MapDisplay from "../MapDisplay";
 
 const EmployerProfileForm = () => {
   const [formData, setFormData] = useState({
@@ -22,6 +23,7 @@ const EmployerProfileForm = () => {
   const [geoLoading, setGeoLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const logoInputRef = useRef(null);
+  const [mapPosition, setMapPosition] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +37,12 @@ const EmployerProfileForm = () => {
             Longitude: response.data.Longitude || null,
           });
           setLogoPreview(getImageUrl(response.data.LogoURL));
+          if (response.data.Latitude && response.data.Longitude) {
+            setMapPosition([
+              parseFloat(response.data.Latitude),
+              parseFloat(response.data.Longitude),
+            ]);
+          }
         }
       } catch (error) {
         if (error.response && error.response.status !== 404) {
@@ -61,7 +69,7 @@ const EmployerProfileForm = () => {
   };
 
   const handleGeocode = async (e) => {
-    e.preventDefault(); // Ngăn form submit
+    e.preventDefault();
     if (!formData.Address) {
       toast.error("Vui lòng nhập địa chỉ trước khi xác minh.");
       return;
@@ -73,15 +81,27 @@ const EmployerProfileForm = () => {
       const response = await profileApi.geocodeAddress(formData.Address);
       const { lat, lng } = response.data;
 
-      // Cập nhật state với lat/lng mới
-      setFormData((prev) => ({
-        ...prev,
-        Latitude: lat,
-        Longitude: lng,
-      }));
-      toast.success("Đã tìm thấy toạ độ!", { id: toastId });
+      if (lat && lng) {
+        setFormData((prev) => ({
+          ...prev,
+          Latitude: lat,
+          Longitude: lng,
+        }));
+        setMapPosition([lat, lng]);
+        toast.success("Đã tìm thấy toạ độ!", { id: toastId });
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          Latitude: null,
+          Longitude: null,
+        }));
+        setMapPosition(null);
+        toast.error("Không tìm thấy địa chỉ.", {
+          id: toastId,
+        });
+      }
     } catch (error) {
-      toast.error("Không tìm thấy địa chỉ. Vui lòng thử lại.", { id: toastId });
+      toast.error("Lỗi máy chủ Geocoding. Vui lòng thử lại.", { id: toastId });
     } finally {
       setGeoLoading(false);
     }
@@ -251,6 +271,8 @@ const EmployerProfileForm = () => {
             />
           </div>
         </div>
+
+        {mapPosition && <MapDisplay position={mapPosition} />}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
