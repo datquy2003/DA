@@ -41,6 +41,8 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
     Address,
     City,
     Country,
+    Latitude,
+    Longitude,
   } = req.body;
 
   if (!CompanyName) {
@@ -60,6 +62,10 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
       const relativePath = path.relative(process.cwd(), req.file.path);
       newLogoURL = "/" + normalizePath(relativePath);
     }
+
+    const latValue = Latitude ? parseFloat(Latitude) : null;
+    const lngValue = Longitude ? parseFloat(Longitude) : null;
+
     const result = await pool
       .request()
       .input("OwnerUserID", sql.NVarChar, firebaseUid)
@@ -71,7 +77,9 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
       .input("CompanyDescription", sql.NText, CompanyDescription || null)
       .input("Address", sql.NVarChar, Address || null)
       .input("City", sql.NVarChar, City || null)
-      .input("Country", sql.NVarChar, Country || null).query(`
+      .input("Country", sql.NVarChar, Country || null)
+      .input("Latitude", sql.Decimal(9, 6), latValue)
+      .input("Longitude", sql.Decimal(9, 6), lngValue).query(`
         MERGE INTO Companies AS target
         USING (VALUES (@OwnerUserID)) AS source (OwnerUserID)
         ON (target.OwnerUserID = source.OwnerUserID)
@@ -85,10 +93,12 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
             CompanyDescription = @CompanyDescription,
             Address = @Address,
             City = @City,
-            Country = @Country
+            Country = @Country,
+            Latitude = @Latitude,
+            Longitude = @Longitude
         WHEN NOT MATCHED BY TARGET THEN
-          INSERT (OwnerUserID, CompanyName, CompanyEmail, CompanyPhone, WebsiteURL, LogoURL, CompanyDescription, Address, City, Country)
-          VALUES (@OwnerUserID, @CompanyName, @CompanyEmail, @CompanyPhone, @WebsiteURL, @LogoURL, @CompanyDescription, @Address, @City, @Country)
+          INSERT (OwnerUserID, CompanyName, CompanyEmail, CompanyPhone, WebsiteURL, LogoURL, CompanyDescription, Address, City, Country, Latitude, Longitude)
+          VALUES (@OwnerUserID, @CompanyName, @CompanyEmail, @CompanyPhone, @WebsiteURL, @LogoURL, @CompanyDescription, @Address, @City, @Country, @Latitude, @Longitude)
         OUTPUT inserted.*;
       `);
 

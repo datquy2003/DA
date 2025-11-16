@@ -8,6 +8,7 @@ import authRoutes from "./src/routes/authRoutes.js";
 import userRoutes from "./src/routes/userRoutes.js";
 import candidateRoutes from "./src/routes/candidateRoutes.js";
 import companyRoutes from "./src/routes/companyRoutes.js";
+import utilsRoutes from "./src/routes/utilsRoutes.js";
 
 import path from "path";
 import { fileURLToPath } from "url";
@@ -30,6 +31,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/candidates", candidateRoutes);
 app.use("/api/companies", companyRoutes);
+app.use("/api/utils", utilsRoutes);
 
 app.get("/api/test", (req, res) => {
   res.status(200).json({ message: "Backend đã kết nối thành công!" });
