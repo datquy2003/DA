@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { profileApi } from "../../api/profileApi";
 import toast from "react-hot-toast";
-import { useAuth } from "../../context/AuthContext";
 import { getImageUrl } from "../../utils/urlHelper";
 
 const EmployerProfileForm = () => {
-  // eslint-disable-next-line no-unused-vars
-  const { firebaseUser } = useAuth();
   const [formData, setFormData] = useState({
     CompanyName: "",
     CompanyEmail: "",
@@ -16,10 +13,13 @@ const EmployerProfileForm = () => {
     Address: "",
     City: "",
     Country: "",
+    Latitude: null,
+    Longitude: null,
   });
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const logoInputRef = useRef(null);
 
@@ -29,7 +29,11 @@ const EmployerProfileForm = () => {
       try {
         const response = await profileApi.getCompanyProfile();
         if (response.data) {
-          setFormData(response.data);
+          setFormData({
+            ...response.data,
+            Latitude: response.data.Latitude || null,
+            Longitude: response.data.Longitude || null,
+          });
           setLogoPreview(getImageUrl(response.data.LogoURL));
         }
       } catch (error) {
@@ -53,6 +57,33 @@ const EmployerProfileForm = () => {
     if (file) {
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleGeocode = async (e) => {
+    e.preventDefault(); // Ngăn form submit
+    if (!formData.Address) {
+      toast.error("Vui lòng nhập địa chỉ trước khi xác minh.");
+      return;
+    }
+    setGeoLoading(true);
+    const toastId = toast.loading("Đang tìm địa chỉ...");
+
+    try {
+      const response = await profileApi.geocodeAddress(formData.Address);
+      const { lat, lng } = response.data;
+
+      // Cập nhật state với lat/lng mới
+      setFormData((prev) => ({
+        ...prev,
+        Latitude: lat,
+        Longitude: lng,
+      }));
+      toast.success("Đã tìm thấy toạ độ!", { id: toastId });
+    } catch (error) {
+      toast.error("Không tìm thấy địa chỉ. Vui lòng thử lại.", { id: toastId });
+    } finally {
+      setGeoLoading(false);
     }
   };
 
@@ -172,13 +203,53 @@ const EmployerProfileForm = () => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Địa chỉ
           </label>
-          <input
-            name="Address"
-            type="text"
-            value={formData.Address}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-          />
+          <div className="flex space-x-2">
+            <input
+              name="Address"
+              type="text"
+              value={formData.Address}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              placeholder="Nhập địa chỉ đầy đủ (số, đường, phường/xã, quận/huyện...)"
+            />
+            <button
+              type="button"
+              onClick={handleGeocode}
+              disabled={geoLoading}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex-shrink-0"
+            >
+              {geoLoading ? "Đang tìm..." : "Xác minh"}
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Vĩ độ (Latitude)
+            </label>
+            <input
+              name="Latitude"
+              type="number"
+              value={formData.Latitude || ""}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              readOnly
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Kinh độ (Longitude)
+            </label>
+            <input
+              name="Longitude"
+              type="number"
+              value={formData.Longitude || ""}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              readOnly
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

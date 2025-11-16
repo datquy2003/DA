@@ -20,10 +20,15 @@ const updateCompanyProfile = (data) => {
   return apiClient.put("/companies/me", data);
 };
 
+const geocodeAddress = (address) => {
+  return apiClient.post("/utils/geocode", { address });
+};
+
 export const profileApi = {
   updateBaseProfile,
   getCandidateProfile,
   updateCandidateProfile,
   getCompanyProfile,
   updateCompanyProfile,
+  geocodeAddress,
 };

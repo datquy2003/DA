@@ -41,6 +41,8 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
     Address,
     City,
     Country,
+    Latitude,
+    Longitude,
   } = req.body;
 
   if (!CompanyName) {
@@ -71,7 +73,9 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
       .input("CompanyDescription", sql.NText, CompanyDescription || null)
       .input("Address", sql.NVarChar, Address || null)
       .input("City", sql.NVarChar, City || null)
-      .input("Country", sql.NVarChar, Country || null).query(`
+      .input("Country", sql.NVarChar, Country || null)
+      .input("Latitude", sql.Decimal, Latitude || null)
+      .input("Longitude", sql.Decimal, Longitude || null).query(`
         MERGE INTO Companies AS target
         USING (VALUES (@OwnerUserID)) AS source (OwnerUserID)
         ON (target.OwnerUserID = source.OwnerUserID)
