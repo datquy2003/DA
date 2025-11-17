@@ -6,29 +6,29 @@ import { FaUserCircle } from "react-icons/fa";
 import { getImageUrl } from "../../utils/urlHelper";
 
 const BaseProfileForm = () => {
-  // eslint-disable-next-line no-unused-vars
-  const { appUser, firebaseUser, setAppUser, manualReloadFirebaseUser } =
-    useAuth();
+  const { appUser, firebaseUser, setAppUser } = useAuth();
   const [displayName, setDisplayName] = useState("");
-  const [photoFile, setPhotoFile] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoURL, setPhotoURL] = useState(null);
+  const [newBase64, setNewBase64] = useState(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (appUser) {
       setDisplayName(appUser.DisplayName || "");
-    }
-    if (firebaseUser) {
-      setPhotoPreview(getImageUrl(appUser.PhotoURL || firebaseUser?.photoURL));
+      const url = appUser.PhotoURL || firebaseUser?.photoURL;
+      setPhotoURL(url);
     }
   }, [appUser, firebaseUser]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setPhotoFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewBase64(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -38,13 +38,11 @@ const BaseProfileForm = () => {
     const toastId = toast.loading("Đang cập nhật...");
 
     try {
-      const formData = new FormData();
-      formData.append("displayName", displayName);
-      if (photoFile) {
-        formData.append("photo", photoFile);
-      }
-
-      const response = await profileApi.updateBaseProfile(formData);
+      const finalPhotoURL = newBase64 || photoURL;
+      const response = await profileApi.updateBaseProfile({
+        displayName: displayName,
+        photoURL: finalPhotoURL,
+      });
       const updatedProfile = response.data;
 
       setAppUser((prev) => ({
@@ -53,7 +51,8 @@ const BaseProfileForm = () => {
         PhotoURL: updatedProfile.PhotoURL,
       }));
 
-      setPhotoPreview(getImageUrl(updatedProfile.PhotoURL));
+      setPhotoURL(updatedProfile.PhotoURL);
+      setNewBase64(null);
 
       toast.success("Cập nhật thành công!", { id: toastId });
     } catch (error) {
@@ -61,18 +60,19 @@ const BaseProfileForm = () => {
       toast.error(error.message || "Cập nhật thất bại.", { id: toastId });
     } finally {
       setLoading(false);
-      setPhotoFile(null);
     }
   };
+
+  const preview = newBase64 || getImageUrl(photoURL);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-xl font-semibold mb-4">Thông tin cơ bản</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center space-x-4">
-          {photoPreview ? (
+          {preview ? (
             <img
-              src={photoPreview}
+              src={preview}
               alt="Avatar"
               className="w-24 h-24 rounded-full object-cover border"
             />
