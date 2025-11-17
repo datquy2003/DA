@@ -73,18 +73,22 @@ const ProfileMenu = () => {
 
   return (
     <div className="flex items-center space-x-5">
-      <Link
-        to="/messages"
-        className="text-gray-600 hover:text-blue-600 relative"
-      >
-        <FiMessageSquare size={24} />
-      </Link>
-      <Link
-        to="/notifications"
-        className="text-gray-600 hover:text-blue-600 relative"
-      >
-        <FiBell size={24} />
-      </Link>
+      {!isAdmin && (
+        <Link
+          to="/messages"
+          className="text-gray-600 hover:text-blue-600 relative"
+        >
+          <FiMessageSquare size={24} />
+        </Link>
+      )}
+      {!isAdmin && (
+        <Link
+          to="/notifications"
+          className="text-gray-600 hover:text-blue-600 relative"
+        >
+          <FiBell size={24} />
+        </Link>
+      )}
 
       <div className="relative" ref={dropdownRef}>
         <button
