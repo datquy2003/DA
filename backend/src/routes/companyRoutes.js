@@ -2,12 +2,8 @@ import express from "express";
 import sql from "mssql";
 import { sqlConfig } from "../config/db.js";
 import { checkAuth } from "../middleware/authMiddleware.js";
-import { uploadLogo } from "../middleware/uploadMiddleware.js";
-import path from "path";
 
 const router = express.Router();
-
-const normalizePath = (p) => (p ? p.replace(/\\/g, "/") : null);
 
 router.get("/me", checkAuth, async (req, res) => {
   const firebaseUid = req.firebaseUser.uid;
@@ -30,7 +26,7 @@ router.get("/me", checkAuth, async (req, res) => {
   }
 });
 
-router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
+router.put("/me", checkAuth, async (req, res) => {
   const firebaseUid = req.firebaseUser.uid;
   const {
     CompanyName,
@@ -43,6 +39,7 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
     Country,
     Latitude,
     Longitude,
+    LogoURL,
   } = req.body;
 
   if (!CompanyName) {
@@ -51,17 +48,6 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
 
   try {
     const pool = await sql.connect(sqlConfig);
-    const companyResult = await pool
-      .request()
-      .input("OwnerUserID", sql.NVarChar, firebaseUid)
-      .query("SELECT LogoURL FROM Companies WHERE OwnerUserID = @OwnerUserID");
-
-    let newLogoURL = companyResult.recordset[0]?.LogoURL;
-
-    if (req.file) {
-      const relativePath = path.relative(process.cwd(), req.file.path);
-      newLogoURL = "/" + normalizePath(relativePath);
-    }
 
     const latValue = Latitude ? parseFloat(Latitude) : null;
     const lngValue = Longitude ? parseFloat(Longitude) : null;
@@ -73,7 +59,7 @@ router.put("/me", checkAuth, uploadLogo.single("logo"), async (req, res) => {
       .input("CompanyEmail", sql.NVarChar, CompanyEmail || null)
       .input("CompanyPhone", sql.NVarChar, CompanyPhone || null)
       .input("WebsiteURL", sql.NVarChar, WebsiteURL || null)
-      .input("LogoURL", sql.NVarChar, newLogoURL || null)
+      .input("LogoURL", sql.NVarChar, LogoURL || null)
       .input("CompanyDescription", sql.NText, CompanyDescription || null)
       .input("Address", sql.NVarChar, Address || null)
       .input("City", sql.NVarChar, City || null)

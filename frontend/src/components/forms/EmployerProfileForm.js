@@ -16,14 +16,15 @@ const EmployerProfileForm = () => {
     Country: "",
     Latitude: null,
     Longitude: null,
+    LogoURL: null,
   });
-  const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState(null);
+
+  const [newBase64Logo, setNewBase64Logo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const logoInputRef = useRef(null);
   const [mapPosition, setMapPosition] = useState(null);
+  const logoInputRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +37,6 @@ const EmployerProfileForm = () => {
             Latitude: response.data.Latitude || null,
             Longitude: response.data.Longitude || null,
           });
-          setLogoPreview(getImageUrl(response.data.LogoURL));
           if (response.data.Latitude && response.data.Longitude) {
             setMapPosition([
               parseFloat(response.data.Latitude),
@@ -63,8 +63,11 @@ const EmployerProfileForm = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewBase64Logo(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -113,32 +116,26 @@ const EmployerProfileForm = () => {
     const toastId = toast.loading("Đang cập nhật...");
 
     try {
-      const formUpload = new FormData();
-
-      for (const key in formData) {
-        formUpload.append(key, formData[key]);
-      }
-
-      if (logoFile) {
-        formUpload.append("logo", logoFile);
-      }
-
-      const response = await profileApi.updateCompanyProfile(formUpload);
+      const finalLogoURL = newBase64Logo || formData.LogoURL;
+      const response = await profileApi.updateCompanyProfile({
+        ...formData,
+        LogoURL: finalLogoURL,
+      });
       const updatedCompany = response.data;
-
       setFormData(updatedCompany);
-      setLogoPreview(getImageUrl(updatedCompany.LogoURL));
+      setNewBase64Logo(null);
       toast.success("Cập nhật thông tin công ty thành công!", { id: toastId });
     } catch (error) {
       console.error(error);
       toast.error("Cập nhật thất bại.", { id: toastId });
     } finally {
       setLoading(false);
-      setLogoFile(null);
     }
   };
 
   if (initialLoading) return <div>Đang tải hồ sơ công ty...</div>;
+
+  const logoPreview = newBase64Logo || getImageUrl(formData.LogoURL);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">

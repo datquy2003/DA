@@ -1,7 +1,7 @@
 import apiClient from "./apiClient";
 
-const updateBaseProfile = (formData) => {
-  return apiClient.put("/users/me/base", formData);
+const updateBaseProfile = (data) => {
+  return apiClient.put("/users/me/base", data);
 };
 
 const getCandidateProfile = () => {

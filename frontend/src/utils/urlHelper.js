@@ -1,5 +1,3 @@
-const BACKEND_URL = process.env.REACT_APP_API_URL || "http://localhost:8080";
-
 export const getImageUrl = (url) => {
   if (!url) {
     return null;
@@ -7,5 +5,8 @@ export const getImageUrl = (url) => {
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-  return `${BACKEND_URL}${url}`;
+  if (url.startsWith("data:image/")) {
+    return url;
+  }
+  return null;
 };
