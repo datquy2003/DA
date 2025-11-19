@@ -110,17 +110,11 @@ function App() {
           element={<EmployerSubscription />}
         />
         <Route path="admin" element={<AdminLayout />}>
-          <Route
-            path="dashboard"
-            element={<div>Dashboard thống kê (TODO)</div>}
-          />
-
           <Route path="users" element={<UserManagement />} />
           <Route path="jobs" element={<JobManagement />} />
           <Route path="jobs-approval" element={<JobApproval />} />
           <Route path="vip-packages" element={<VipManagement />} />
           <Route path="categories" element={<CategoryManagement />} />
-
           <Route path="system-admins" element={<AdminAccountManagement />} />
         </Route>
       </Route>
