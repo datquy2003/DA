@@ -209,11 +209,10 @@ const AdminHeader = () => {
     <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
       <div className="flex justify-between items-center h-16 px-4">
         <div className="flex space-x-6 h-full">
-          <HeaderNavLink to="/">
-            <FiHome className="mr-1.5" /> Trang chủ
+          <HeaderNavLink to="/admin/users">
+            <FiHome className="mr-1.5" /> Dashboard
           </HeaderNavLink>
         </div>
-
         <ProfileMenu />
       </div>
     </nav>
