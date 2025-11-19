@@ -10,9 +10,16 @@ import ForgotPassword from "./pages/ForgotPassword";
 import MainLayout from "./components/MainLayout";
 import ProfileEdit from "./pages/ProfileEdit";
 
+import AdminLayout from "./pages/admin/AdminLayout";
+import UserManagement from "./pages/admin/UserManagement";
+import JobManagement from "./pages/admin/JobManagement";
+import JobApproval from "./pages/admin/JobApproval";
+import VipManagement from "./pages/admin/VipManagement";
+import CategoryManagement from "./pages/admin/CategoryManagement";
+import AdminAccountManagement from "./pages/admin/AdminAccountManagement";
+
 const HomeCandidate = () => <div>Trang chủ ỨNG VIÊN (Role 4)</div>;
 const HomeEmployer = () => <div>Trang chủ NHÀ TUYỂN DỤNG (Role 3)</div>;
-const HomeAdmin = () => <div>Trang chủ ADMIN (Role 1 & 2)</div>;
 
 const CvManagement = () => <div>Trang Quản lý CV</div>;
 const AppliedJobs = () => <div>Trang Việc đã ứng tuyển</div>;
@@ -20,7 +27,7 @@ const FavoriteJobs = () => <div>Trang Việc yêu thích</div>;
 const BlockedCompanies = () => <div>Trang Công ty đã chặn</div>;
 const CandidateSubscription = () => <div>Trang Gói dịch vụ ỨNG VIÊN</div>;
 
-const JobManagement = () => <div>Trang Quản lý tin tuyển dụng</div>;
+const JobManagementEmployer = () => <div>Trang Quản lý tin tuyển dụng</div>;
 const ApplicantManagement = () => <div>Trang Ứng viên ứng tuyển</div>;
 const SearchCandidates = () => <div>Trang Tìm kiếm ứng viên</div>;
 const EmployerSubscription = () => <div>Trang Gói VIP NHÀ TUYỂN DỤNG</div>;
@@ -31,22 +38,17 @@ const VipUpgrade = () => <div>Trang Nâng cấp VIP (Chung)</div>;
 
 const RoleBasedHome = () => {
   const { appUser } = useAuth();
-  switch (appUser?.RoleID) {
-    case 4:
-      return <HomeCandidate />;
-    case 3:
-      return <HomeEmployer />;
-    case 2:
-    case 1:
-      return <HomeAdmin />;
-    default:
-      return <div>Đang tải trang chủ...</div>;
+  if (appUser?.RoleID === 4) return <HomeCandidate />;
+  if (appUser?.RoleID === 3) return <HomeEmployer />;
+
+  if (appUser?.RoleID === 1 || appUser?.RoleID === 2) {
+    return <Navigate to="/admin/users" replace />;
   }
+  return <div>Đang tải...</div>;
 };
 
 function App() {
   const { firebaseUser, appUser } = useAuth();
-
   const isAuthenticated = firebaseUser && appUser;
   const isNewUser = firebaseUser && !appUser;
 
@@ -97,7 +99,7 @@ function App() {
           path="candidate/subscription"
           element={<CandidateSubscription />}
         />
-        <Route path="employer/jobs" element={<JobManagement />} />
+        <Route path="employer/jobs" element={<JobManagementEmployer />} />
         <Route path="employer/applicants" element={<ApplicantManagement />} />
         <Route
           path="employer/search-candidates"
@@ -107,6 +109,14 @@ function App() {
           path="employer/subscription"
           element={<EmployerSubscription />}
         />
+        <Route path="admin" element={<AdminLayout />}>
+          <Route path="users" element={<UserManagement />} />
+          <Route path="jobs" element={<JobManagement />} />
+          <Route path="jobs-approval" element={<JobApproval />} />
+          <Route path="vip-packages" element={<VipManagement />} />
+          <Route path="categories" element={<CategoryManagement />} />
+          <Route path="system-admins" element={<AdminAccountManagement />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" />} />
