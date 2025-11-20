@@ -9,6 +9,7 @@ import userRoutes from "./src/routes/userRoutes.js";
 import candidateRoutes from "./src/routes/candidateRoutes.js";
 import companyRoutes from "./src/routes/companyRoutes.js";
 import utilsRoutes from "./src/routes/utilsRoutes.js";
+import adminRoutes from "./src/routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/candidates", candidateRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/utils", utilsRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/api/test", (req, res) => {
   res.status(200).json({ message: "Backend đã kết nối thành công!" });
