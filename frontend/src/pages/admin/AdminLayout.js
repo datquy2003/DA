@@ -39,7 +39,7 @@ const AdminLayout = () => {
               }
             >
               <FiUsers size={20} />
-              <span>Quản lý Người dùng</span>
+              <span>Quản lý người dùng</span>
             </NavLink>
 
             {isSuperAdmin && (
@@ -50,7 +50,7 @@ const AdminLayout = () => {
                 }
               >
                 <FiShield size={20} />
-                <span>Quản lý Admin</span>
+                <span>Quản lý admin</span>
               </NavLink>
             )}
             <NavLink
@@ -60,7 +60,7 @@ const AdminLayout = () => {
               }
             >
               <FiCheckCircle size={20} />
-              <span>Duyệt Bài đăng</span>
+              <span>Duyệt bài tuyển dụng</span>
             </NavLink>
 
             <NavLink
@@ -70,7 +70,7 @@ const AdminLayout = () => {
               }
             >
               <FiBriefcase size={20} />
-              <span>Tất cả Bài đăng</span>
+              <span>Quản lý bài tuyển dụng</span>
             </NavLink>
 
             <div className="px-4 py-2 mt-6 text-xs font-semibold text-gray-400 uppercase tracking-wider">
