@@ -117,7 +117,9 @@ const UserDetailModal = ({ user, type, onClose }) => {
               <InfoItem
                 icon={<FiCalendar />}
                 label="Ngày tham gia"
-                value={new Date(user.CreatedAt).toLocaleDateString("vi-VN")}
+                value={new Date(user.CreatedAt).toLocaleDateString("vi-VN", {
+                  timeZone: "UTC",
+                })}
               />
             </div>
 
@@ -142,7 +144,9 @@ const UserDetailModal = ({ user, type, onClose }) => {
                     label="Ngày sinh"
                     value={
                       user.Birthday
-                        ? new Date(user.Birthday).toLocaleDateString("vi-VN")
+                        ? new Date(user.Birthday).toLocaleDateString("vi-VN", {
+                            timeZone: "UTC",
+                          })
                         : null
                     }
                   />
@@ -311,11 +315,11 @@ const UserManagement = () => {
           <h1 className="text-2xl font-bold text-gray-800">
             Quản lý Người dùng
           </h1>
-          <div className="relative">
+          <div className="relative w-80">
             <input
               type="text"
-              placeholder="Tìm kiếm..."
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Tìm kiếm theo tên hoặc email..."
+              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

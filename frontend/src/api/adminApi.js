@@ -16,9 +16,19 @@ const toggleBanUser = (uid, isBanned) => {
   return apiClient.put(`/admin/users/${uid}/ban`, { isBanned });
 };
 
+const getSystemAdmins = () => {
+  return apiClient.get("/admin/system-admins");
+};
+
+const createSystemAdmin = (data) => {
+  return apiClient.post("/admin/system-admins", data);
+};
+
 export const adminApi = {
   getCandidates,
   getEmployers,
   deleteUser,
   toggleBanUser,
+  getSystemAdmins,
+  createSystemAdmin,
 };

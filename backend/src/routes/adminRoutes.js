@@ -26,6 +26,28 @@ const checkAdminRole = async (req, res, next) => {
   }
 };
 
+const checkSuperAdminRole = async (req, res, next) => {
+  try {
+    const pool = await sql.connect(sqlConfig);
+    const result = await pool
+      .request()
+      .input("FirebaseUserID", sql.NVarChar, req.firebaseUser.uid)
+      .query("SELECT RoleID FROM Users WHERE FirebaseUserID = @FirebaseUserID");
+
+    const roleID = result.recordset[0]?.RoleID;
+
+    if (roleID === 2) {
+      next();
+    } else {
+      return res
+        .status(403)
+        .json({ message: "Chỉ Super Admin mới có quyền này." });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: "Lỗi kiểm tra quyền Super Admin." });
+  }
+};
+
 router.get("/users/candidates", checkAuth, checkAdminRole, async (req, res) => {
   try {
     const pool = await sql.connect(sqlConfig);
@@ -107,5 +129,72 @@ router.put("/users/:uid/ban", checkAuth, async (req, res) => {
     res.status(500).json({ message: "Lỗi server." });
   }
 });
+
+router.get(
+  "/system-admins",
+  checkAuth,
+  checkSuperAdminRole,
+  async (req, res) => {
+    try {
+      const pool = await sql.connect(sqlConfig);
+      const result = await pool.request().query(`
+        SELECT FirebaseUserID, Email, DisplayName, PhotoURL, IsBanned, CreatedAt, LastLoginAt, IsVerified
+      FROM Users
+      WHERE RoleID = 1
+      ORDER BY CreatedAt DESC
+    `);
+      res.status(200).json(result.recordset);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách admin:", error);
+      res.status(500).json({ message: "Lỗi server." });
+    }
+  }
+);
+
+router.post(
+  "/system-admins",
+  checkAuth,
+  checkSuperAdminRole,
+  async (req, res) => {
+    const { email, password, displayName } = req.body;
+
+    if (!email || !password || !displayName) {
+      return res
+        .status(400)
+        .json({ message: "Vui lòng điền đầy đủ thông tin." });
+    }
+
+    try {
+      const userRecord = await admin.auth().createUser({
+        email: email,
+        password: password,
+        displayName: displayName,
+        emailVerified: true,
+      });
+
+      const pool = await sql.connect(sqlConfig);
+      await pool
+        .request()
+        .input("FirebaseUserID", sql.NVarChar, userRecord.uid)
+        .input("Email", sql.NVarChar, email)
+        .input("DisplayName", sql.NVarChar, displayName)
+        .input("RoleID", sql.Int, 1)
+        .input("IsVerified", sql.Bit, 1).query(`
+          INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, IsVerified, CreatedAt, UpdatedAt)
+          VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, @IsVerified, GETDATE(), GETDATE())
+        `);
+
+      res
+        .status(201)
+        .json({ message: "Tạo tài khoản Admin thành công!", user: userRecord });
+    } catch (error) {
+      console.error("Lỗi tạo admin:", error);
+      if (error.code === "auth/email-already-exists") {
+        return res.status(400).json({ message: "Email này đã được sử dụng." });
+      }
+      res.status(500).json({ message: "Lỗi server khi tạo Admin." });
+    }
+  }
+);
 
 export default router;
