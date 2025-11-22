@@ -24,6 +24,10 @@ const createSystemAdmin = (data) => {
   return apiClient.post("/admin/system-admins", data);
 };
 
+const getUsersNoRole = () => {
+  return apiClient.get("/admin/users/no-role");
+};
+
 export const adminApi = {
   getCandidates,
   getEmployers,
@@ -31,4 +35,5 @@ export const adminApi = {
   toggleBanUser,
   getSystemAdmins,
   createSystemAdmin,
+  getUsersNoRole,
 };

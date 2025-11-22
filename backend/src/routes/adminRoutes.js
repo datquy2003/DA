@@ -48,6 +48,25 @@ const checkSuperAdminRole = async (req, res, next) => {
   }
 };
 
+router.get("/users/no-role", checkAuth, checkAdminRole, async (req, res) => {
+  try {
+    const pool = await sql.connect(sqlConfig);
+    const result = await pool.request().query(`
+      SELECT 
+        FirebaseUserID, Email, DisplayName, PhotoURL, IsVerified, IsBanned, CreatedAt, LastLoginAt
+      FROM Users
+      WHERE RoleID IS NULL
+      ORDER BY CreatedAt DESC
+    `);
+    res.status(200).json(result.recordset);
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Lỗi lấy danh sách người dùng chưa chọn role." });
+  }
+});
+
 router.get("/users/candidates", checkAuth, checkAdminRole, async (req, res) => {
   try {
     const pool = await sql.connect(sqlConfig);
