@@ -14,7 +14,7 @@ router.get("/me", checkAuth, async (req, res) => {
   try {
     const firebaseUid = req.firebaseUser.uid;
     const firebaseUserRecord = await admin.auth().getUser(firebaseUid);
-
+    const { email, displayName, photoURL } = firebaseUserRecord;
     const firebaseIdentities = firebaseUserRecord.providerData.reduce(
       (acc, provider) => {
         acc[provider.providerId] = acc[provider.providerId] || [];
@@ -41,29 +41,44 @@ router.get("/me", checkAuth, async (req, res) => {
     await transaction.begin();
 
     try {
-      const userResult = await transaction
+      let userResult = await transaction
         .request()
         .input("FirebaseUserID", sql.NVarChar, firebaseUid)
         .query("SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID");
 
       if (userResult.recordset.length === 0) {
-        await transaction.commit();
-        return res
-          .status(404)
-          .json({ message: "User chưa có trong CSDL. Cần đăng ký role." });
+        await transaction
+          .request()
+          .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+          .input("Email", sql.NVarChar, email)
+          .input(
+            "DisplayName",
+            sql.NVarChar,
+            displayName || email?.split("@")[0] || "User"
+          )
+          .input("PhotoURL", sql.NVarChar, photoURL || null)
+          .input("IsVerified", sql.Bit, finalIsVerified).query(`
+            INSERT INTO Users (FirebaseUserID, Email, DisplayName, PhotoURL, IsVerified, CreatedAt, UpdatedAt, LastLoginAt)
+            VALUES (@FirebaseUserID, @Email, @DisplayName, @PhotoURL, @IsVerified, GETDATE(), GETDATE(), GETDATE());
+          `);
+
+        userResult = await transaction
+          .request()
+          .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+          .query("SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID");
+      } else {
+        await transaction
+          .request()
+          .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+          .query(
+            "UPDATE Users SET LastLoginAt = GETDATE() WHERE FirebaseUserID = @FirebaseUserID"
+          );
       }
 
       const userFromDB = userResult.recordset[0];
       const updatedAtInDB = userFromDB.UpdatedAt
         ? new Date(userFromDB.UpdatedAt).getTime()
         : 0;
-
-      await transaction
-        .request()
-        .input("FirebaseUserID", sql.NVarChar, firebaseUid)
-        .query(
-          "UPDATE Users SET LastLoginAt = GETDATE() WHERE FirebaseUserID = @FirebaseUserID"
-        );
 
       const sqlResult = await transaction
         .request()
@@ -205,9 +220,15 @@ router.post("/register", checkAuth, async (req, res) => {
         .input("RoleID", sql.Int, roleID)
         .input("PhotoURL", sql.NVarChar, photoURL || null)
         .input("IsVerified", sql.Bit, finalIsVerified).query(`
-          INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, CreatedAt, UpdatedAt, IsVerified)
-          VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, GETDATE(), GETDATE(), @IsVerified);
-          SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID;
+          MERGE INTO Users AS target
+          USING (VALUES (@FirebaseUserID)) AS source (FirebaseUserID)
+          ON (target.FirebaseUserID = source.FirebaseUserID)
+          WHEN MATCHED THEN
+            UPDATE SET RoleID = @RoleID, UpdatedAt = GETDATE()
+          WHEN NOT MATCHED BY TARGET THEN
+            INSERT (FirebaseUserID, Email, DisplayName, RoleID, PhotoURL, CreatedAt, UpdatedAt, IsVerified)
+            VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, @PhotoURL, GETDATE(), GETDATE(), @IsVerified)
+          OUTPUT inserted.*;
         `);
 
       for (const providerId of providersToSync) {
@@ -220,8 +241,14 @@ router.post("/register", checkAuth, async (req, res) => {
             .input("FirebaseUserID", sql.NVarChar, uid)
             .input("ProviderID", sql.NVarChar, providerId)
             .input("ProviderUID", sql.NVarChar, providerUidToSave).query(`
-              INSERT INTO UserProviders (FirebaseUserID, ProviderID, ProviderUID, LinkedAt)
-              VALUES (@FirebaseUserID, @ProviderID, @ProviderUID, GETDATE());
+              MERGE INTO UserProviders AS target
+              USING (VALUES (@FirebaseUserID, @ProviderID, @ProviderUID)) AS source (FirebaseUserID, ProviderID, ProviderUID)
+              ON (target.FirebaseUserID = source.FirebaseUserID AND target.ProviderID = source.ProviderID AND target.ProviderUID = source.ProviderUID)
+              WHEN MATCHED THEN
+                UPDATE SET LinkedAt = GETDATE()
+              WHEN NOT MATCHED BY TARGET THEN
+                INSERT (FirebaseUserID, ProviderID, ProviderUID, LinkedAt)
+                VALUES (source.FirebaseUserID, source.ProviderID, source.ProviderUID, GETDATE());
             `);
         }
       }
