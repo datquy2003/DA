@@ -40,17 +40,19 @@ const RoleBasedHome = () => {
   const { appUser } = useAuth();
   if (appUser?.RoleID === 4) return <HomeCandidate />;
   if (appUser?.RoleID === 3) return <HomeEmployer />;
-
   if (appUser?.RoleID === 1 || appUser?.RoleID === 2) {
     return <Navigate to="/admin/users" replace />;
+  }
+  if (appUser && !appUser.RoleID) {
+    return <Navigate to="/choose-role" replace />;
   }
   return <div>Đang tải...</div>;
 };
 
 function App() {
   const { firebaseUser, appUser } = useAuth();
-  const isAuthenticated = firebaseUser && appUser;
-  const isNewUser = firebaseUser && !appUser;
+  const isAuthenticated = firebaseUser && appUser && appUser.RoleID;
+  const isNewUser = firebaseUser && (!appUser || !appUser.RoleID);
 
   return (
     <Routes>
