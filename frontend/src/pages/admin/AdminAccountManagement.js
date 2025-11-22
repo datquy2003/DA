@@ -1,7 +1,403 @@
-import React from "react";
-const AdminAccountManagement = () => (
-  <div className="text-2xl font-bold text-red-600">
-    Quản lý Tài khoản Admin (Chỉ SuperAdmin)
-  </div>
-);
+import React, { useState, useEffect } from "react";
+import { adminApi } from "../../api/adminApi";
+import { getImageUrl } from "../../utils/urlHelper";
+import {
+  FiUserPlus,
+  FiTrash2,
+  FiLock,
+  FiUnlock,
+  FiX,
+  FiMail,
+  FiUser,
+  FiKey,
+  FiCalendar,
+  FiSearch,
+  FiClock,
+} from "react-icons/fi";
+import toast from "react-hot-toast";
+
+const CreateAdminModal = ({ onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    displayName: "",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (formData.password.length < 6) {
+      toast.error("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+
+    setLoading(true);
+    const toastId = toast.loading("Đang tạo tài khoản...");
+
+    try {
+      await adminApi.createSystemAdmin(formData);
+      toast.success("Tạo Admin thành công!", { id: toastId });
+      onSuccess();
+    } catch (error) {
+      console.error(error);
+      const msg = error.response?.data?.message || "Tạo thất bại.";
+      toast.error(msg, { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm !mt-0">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fadeIn">
+        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-50">
+          <h3 className="text-lg font-bold text-gray-800 flex items-center">
+            <FiUserPlus className="mr-2" /> Thêm Quản trị viên mới
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <FiX size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tên hiển thị
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiUser className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                name="displayName"
+                required
+                value={formData.displayName}
+                onChange={handleChange}
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Nhập tên hiển thị"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email đăng nhập
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiMail className="text-gray-400" />
+              </div>
+              <input
+                type="email"
+                name="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Nhập email"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Mật khẩu
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiKey className="text-gray-400" />
+              </div>
+              <input
+                type="password"
+                name="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                placeholder="******"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Tối thiểu 6 ký tự.</p>
+          </div>
+
+          <div className="pt-2 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
+            >
+              {loading ? "Đang tạo..." : "Tạo tài khoản"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const AdminAccountManagement = () => {
+  const [admins, setAdmins] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const fetchAdmins = async () => {
+    setLoading(true);
+    try {
+      const response = await adminApi.getSystemAdmins();
+      setAdmins(response.data);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách admin:", error);
+      toast.error("Không thể tải danh sách Admin.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const handleDelete = async (uid) => {
+    if (
+      window.confirm(
+        "CẢNH BÁO: Bạn có chắc muốn XÓA tài khoản Admin này không?"
+      )
+    ) {
+      try {
+        await adminApi.deleteUser(uid);
+        toast.success("Đã xóa Admin thành công.");
+        setAdmins(admins.filter((a) => a.FirebaseUserID !== uid));
+      } catch (error) {
+        toast.error("Xóa thất bại.");
+      }
+    }
+  };
+
+  const handleToggleBan = async (uid, currentStatus) => {
+    const newStatus = !currentStatus;
+    const action = newStatus ? "Khóa" : "Mở khóa";
+    if (window.confirm(`Bạn muốn ${action} tài khoản Admin này?`)) {
+      try {
+        await adminApi.toggleBanUser(uid, newStatus);
+        toast.success(`Đã ${action} thành công.`);
+        setAdmins(
+          admins.map((a) =>
+            a.FirebaseUserID === uid ? { ...a, IsBanned: newStatus } : a
+          )
+        );
+      } catch (error) {
+        toast.error("Thao tác thất bại.");
+      }
+    }
+  };
+
+  const filteredAdmins = admins.filter(
+    (admin) =>
+      admin.DisplayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      admin.Email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center">
+              Quản lý Admin hệ thống
+            </h1>
+          </div>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            <FiUserPlus className="mr-2" /> Thêm Admin mới
+          </button>
+        </div>
+
+        <div className="bg-white p-4 rounded-lg shadow-sm flex items-center border">
+          <div className="relative w-full max-w-md">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên hoặc email..."
+              className="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <FiSearch className="absolute left-3 top-3 text-gray-400" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">
+              Đang tải dữ liệu...
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Admin
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ngày tạo
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Đăng nhập gần nhất
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Hành động
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredAdmins.length > 0 ? (
+                    filteredAdmins.map((admin) => (
+                      <tr
+                        key={admin.FirebaseUserID}
+                        className={`transition-colors ${
+                          admin.IsBanned ? "bg-gray-100" : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <img
+                                className={`h-10 w-10 rounded-full object-cover border ${
+                                  admin.IsBanned ? "grayscale opacity-50" : ""
+                                }`}
+                                src={
+                                  getImageUrl(admin.PhotoURL) ||
+                                  "https://via.placeholder.com/40"
+                                }
+                                alt=""
+                              />
+                            </div>
+                            <div className="ml-4">
+                              <div
+                                className={`text-sm font-medium ${
+                                  admin.IsBanned
+                                    ? "text-gray-500"
+                                    : "text-gray-900"
+                                }`}
+                              >
+                                {admin.DisplayName}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {admin.Email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FiCalendar className="mr-1.5 text-gray-400" />
+                            {new Date(admin.CreatedAt).toLocaleDateString(
+                              "vi-VN",
+                              { timeZone: "UTC" }
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FiClock className="mr-1.5 text-gray-400" />
+                            {admin.LastLoginAt ? (
+                              new Date(admin.LastLoginAt).toLocaleString(
+                                "vi-VN",
+                                { timeZone: "UTC" }
+                              )
+                            ) : (
+                              <span className="text-gray-400 italic">
+                                Chưa đăng nhập
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end space-x-3">
+                            <button
+                              onClick={() =>
+                                handleToggleBan(
+                                  admin.FirebaseUserID,
+                                  admin.IsBanned
+                                )
+                              }
+                              className={`${
+                                admin.IsBanned
+                                  ? "text-green-600 hover:text-green-900"
+                                  : "text-yellow-600 hover:text-yellow-900"
+                              }`}
+                              title={
+                                admin.IsBanned ? "Mở khóa" : "Khóa tài khoản"
+                              }
+                            >
+                              {admin.IsBanned ? (
+                                <FiUnlock size={18} />
+                              ) : (
+                                <FiLock size={18} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(admin.FirebaseUserID)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Xóa vĩnh viễn"
+                            >
+                              <FiTrash2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="px-6 py-8 text-center text-gray-500 italic"
+                      >
+                        Chưa có tài khoản Admin nào (ngoài bạn).
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <CreateAdminModal
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            fetchAdmins();
+          }}
+        />
+      )}
+    </>
+  );
+};
+
 export default AdminAccountManagement;
