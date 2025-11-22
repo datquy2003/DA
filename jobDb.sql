@@ -22,7 +22,7 @@ CREATE TABLE Users (
     FirebaseUserID nvarchar(128) PRIMARY KEY NOT NULL,
     Email nvarchar(100) UNIQUE NOT NULL,
     DisplayName nvarchar(100) NOT NULL,
-    RoleID int NOT NULL,
+    RoleID int,
     PhotoURL nvarchar(MAX),
     IsVerified bit DEFAULT 0,
     IsBanned bit DEFAULT 0,
