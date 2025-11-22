@@ -15,6 +15,7 @@ import {
   FiGlobe,
   FiCalendar,
   FiMail,
+  FiHelpCircle,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 
@@ -22,19 +23,25 @@ const UserDetailModal = ({ user, type, onClose }) => {
   if (!user) return null;
 
   const isEmployer = type === "employers";
+  const isNoRole = type === "no-role";
   const avatarUrl = getImageUrl(isEmployer ? user.LogoURL : user.PhotoURL);
+
+  let title = "Hồ sơ Ứng viên";
+  let TypeIcon = FiUser;
+  if (isEmployer) {
+    title = "Chi tiết Công ty";
+    TypeIcon = FiBriefcase;
+  } else if (isNoRole) {
+    title = "Tài khoản chưa phân loại";
+    TypeIcon = FiHelpCircle;
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm !mt-0">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn">
         <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
           <h3 className="text-lg font-bold text-gray-800 flex items-center">
-            {isEmployer ? (
-              <FiBriefcase className="mr-2" />
-            ) : (
-              <FiUser className="mr-2" />
-            )}
-            {isEmployer ? "Chi tiết Công ty" : "Hồ sơ Ứng viên"}
+            <TypeIcon className="mr-2" /> {title}
           </h3>
           <button
             onClick={onClose}
@@ -93,17 +100,20 @@ const UserDetailModal = ({ user, type, onClose }) => {
                 value={user.Email}
               />
 
-              <InfoItem
-                icon={<FiPhone />}
-                label="Số điện thoại"
-                value={isEmployer ? user.CompanyPhone : user.PhoneNumber}
-              />
-
-              <InfoItem
-                icon={<FiMapPin />}
-                label="Địa chỉ"
-                value={isEmployer ? user.CompanyAddress : user.Address}
-              />
+              {!isNoRole && (
+                <>
+                  <InfoItem
+                    icon={<FiPhone />}
+                    label="Số điện thoại"
+                    value={isEmployer ? user.CompanyPhone : user.PhoneNumber}
+                  />
+                  <InfoItem
+                    icon={<FiMapPin />}
+                    label="Địa chỉ"
+                    value={isEmployer ? user.CompanyAddress : user.Address}
+                  />
+                </>
+              )}
 
               {isEmployer && (
                 <InfoItem
@@ -128,7 +138,12 @@ const UserDetailModal = ({ user, type, onClose }) => {
                 {isEmployer ? "Thông tin doanh nghiệp" : "Thông tin cá nhân"}
               </h4>
 
-              {isEmployer ? (
+              {isNoRole ? (
+                <p className="text-sm text-gray-500 italic">
+                  Tài khoản này chưa hoàn tất việc chọn vai trò (Ứng viên/Nhà
+                  tuyển dụng). Chưa có thông tin hồ sơ chi tiết.
+                </p>
+              ) : isEmployer ? (
                 <>
                   <InfoItem
                     label="Tên người đại diện"
@@ -154,16 +169,18 @@ const UserDetailModal = ({ user, type, onClose }) => {
               )}
             </div>
 
-            <div className="col-span-1 md:col-span-2 mt-2">
-              <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider border-b pb-2 mb-3">
-                {isEmployer ? "Mô tả công ty" : "Giới thiệu bản thân"}
-              </h4>
-              <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-60 overflow-y-auto border border-gray-100">
-                {isEmployer
-                  ? user.CompanyDescription || "Chưa có mô tả"
-                  : user.ProfileSummary || "Chưa có giới thiệu"}
+            {!isNoRole && (
+              <div className="col-span-1 md:col-span-2 mt-2">
+                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider border-b pb-2 mb-3">
+                  {isEmployer ? "Mô tả công ty" : "Giới thiệu bản thân"}
+                </h4>
+                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-60 overflow-y-auto border border-gray-100">
+                  {isEmployer
+                    ? user.CompanyDescription || "Chưa có mô tả"
+                    : user.ProfileSummary || "Chưa có giới thiệu"}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -216,6 +233,8 @@ const UserManagement = () => {
       let response;
       if (activeTab === "candidates") {
         response = await adminApi.getCandidates();
+      } else if (activeTab === "no-role") {
+        response = await adminApi.getUsersNoRole();
       } else {
         response = await adminApi.getEmployers();
       }
@@ -279,19 +298,12 @@ const UserManagement = () => {
 
   const filteredData = data.filter((item) => {
     const term = searchTerm.toLowerCase();
-    if (activeTab === "candidates") {
-      return (
-        item.DisplayName?.toLowerCase().includes(term) ||
-        item.Email?.toLowerCase().includes(term) ||
-        item.FullName?.toLowerCase().includes(term)
-      );
-    } else {
-      return (
-        item.DisplayName?.toLowerCase().includes(term) ||
-        item.Email?.toLowerCase().includes(term) ||
-        item.CompanyName?.toLowerCase().includes(term)
-      );
-    }
+    return (
+      item.DisplayName?.toLowerCase().includes(term) ||
+      item.Email?.toLowerCase().includes(term) ||
+      item.FullName?.toLowerCase().includes(term) ||
+      item.CompanyName?.toLowerCase().includes(term)
+    );
   });
 
   const StatusBadge = ({ isVerified }) => {
@@ -348,6 +360,16 @@ const UserManagement = () => {
           >
             <FiUser className="mr-2" /> Ứng Viên
           </button>
+          <button
+            onClick={() => setActiveTab("no-role")}
+            className={`flex items-center px-6 py-3 font-medium transition-colors duration-200 ${
+              activeTab === "no-role"
+                ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <FiHelpCircle className="mr-2" /> Chưa phân loại
+          </button>
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -366,7 +388,9 @@ const UserManagement = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {activeTab === "employers"
                         ? "Thông tin Công ty"
-                        : "Hồ sơ cá nhân"}
+                        : activeTab === "candidates"
+                        ? "Hồ sơ cá nhân"
+                        : "Thông tin bổ sung"}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Liên hệ
@@ -468,25 +492,31 @@ const UserManagement = () => {
                                 Chưa cập nhật hồ sơ
                               </span>
                             )
-                          ) : user.FullName ? (
-                            <div>
-                              <div
-                                className={`text-sm font-medium ${
-                                  user.IsBanned
-                                    ? "text-gray-600"
-                                    : "text-gray-900"
-                                }`}
-                              >
-                                {user.FullName}
+                          ) : activeTab === "candidates" ? (
+                            user.FullName ? (
+                              <div>
+                                <div
+                                  className={`text-sm font-medium ${
+                                    user.IsBanned
+                                      ? "text-gray-600"
+                                      : "text-gray-900"
+                                  }`}
+                                >
+                                  {user.FullName}
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                  <FiMapPin className="mr-1" />{" "}
+                                  {user.Address || "Chưa cập nhật"}
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500 mt-1 flex items-center">
-                                <FiMapPin className="mr-1" />{" "}
-                                {user.Address || "Chưa cập nhật"}
-                              </div>
-                            </div>
+                            ) : (
+                              <span className="text-sm text-gray-400 italic">
+                                Chưa cập nhật hồ sơ
+                              </span>
+                            )
                           ) : (
                             <span className="text-sm text-gray-400 italic">
-                              Chưa cập nhật hồ sơ
+                              Chưa chọn vai trò
                             </span>
                           )}
                         </td>
@@ -496,7 +526,9 @@ const UserManagement = () => {
                             <FiPhone className="mr-2 text-gray-400" />
                             {activeTab === "employers"
                               ? user.CompanyPhone || "---"
-                              : user.PhoneNumber || "---"}
+                              : activeTab === "candidates"
+                              ? user.PhoneNumber || "---"
+                              : "---"}
                           </div>
                         </td>
 
