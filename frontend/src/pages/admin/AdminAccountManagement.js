@@ -15,6 +15,7 @@ import {
   FiClock,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
+import ConfirmationModal from "../../components/modals/ConfirmationModal";
 
 const CreateAdminModal = ({ onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -156,6 +157,14 @@ const AdminAccountManagement = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    isDanger: false,
+    confirmText: "Xác nhận",
+  });
 
   const fetchAdmins = async () => {
     setLoading(true);
@@ -174,37 +183,55 @@ const AdminAccountManagement = () => {
     fetchAdmins();
   }, []);
 
-  const handleDelete = async (uid) => {
-    if (
-      window.confirm(
-        "CẢNH BÁO: Bạn có chắc muốn XÓA tài khoản Admin này không?"
-      )
-    ) {
-      try {
-        await adminApi.deleteUser(uid);
-        toast.success("Đã xóa Admin thành công.");
-        setAdmins(admins.filter((a) => a.FirebaseUserID !== uid));
-      } catch (error) {
-        toast.error("Xóa thất bại.");
-      }
+  const confirmDelete = (uid) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Xóa tài khoản Admin",
+      message:
+        "Bạn có chắc chắn muốn XÓA VĨNH VIỄN tài khoản Admin này không? Hành động này không thể hoàn tác.",
+      isDanger: true,
+      confirmText: "Xóa vĩnh viễn",
+      onConfirm: () => performDelete(uid),
+    });
+  };
+
+  const performDelete = async (uid) => {
+    try {
+      await adminApi.deleteUser(uid);
+      toast.success("Đã xóa Admin thành công.");
+      setAdmins(admins.filter((a) => a.FirebaseUserID !== uid));
+    } catch (error) {
+      toast.error("Xóa thất bại.");
     }
   };
 
-  const handleToggleBan = async (uid, currentStatus) => {
+  const confirmToggleBan = (uid, currentStatus) => {
     const newStatus = !currentStatus;
-    const action = newStatus ? "Khóa" : "Mở khóa";
-    if (window.confirm(`Bạn muốn ${action} tài khoản Admin này?`)) {
-      try {
-        await adminApi.toggleBanUser(uid, newStatus);
-        toast.success(`Đã ${action} thành công.`);
-        setAdmins(
-          admins.map((a) =>
-            a.FirebaseUserID === uid ? { ...a, IsBanned: newStatus } : a
-          )
-        );
-      } catch (error) {
-        toast.error("Thao tác thất bại.");
-      }
+    const action = newStatus ? "Khóa tài khoản" : "Mở khóa tài khoản";
+
+    setConfirmModal({
+      isOpen: true,
+      title: action,
+      message: newStatus
+        ? "Admin này sẽ bị đăng xuất ngay lập tức. Bạn có chắc không?"
+        : "Tài khoản Admin này sẽ được kích hoạt lại. Bạn có chắc không?",
+      isDanger: newStatus,
+      confirmText: newStatus ? "Khóa ngay" : "Mở khóa",
+      onConfirm: () => performToggleBan(uid, newStatus),
+    });
+  };
+
+  const performToggleBan = async (uid, newStatus) => {
+    try {
+      await adminApi.toggleBanUser(uid, newStatus);
+      toast.success(`Đã ${newStatus ? "khóa" : "mở khóa"} thành công.`);
+      setAdmins(
+        admins.map((a) =>
+          a.FirebaseUserID === uid ? { ...a, IsBanned: newStatus } : a
+        )
+      );
+    } catch (error) {
+      toast.error("Thao tác thất bại.");
     }
   };
 
@@ -339,7 +366,7 @@ const AdminAccountManagement = () => {
                           <div className="flex justify-end space-x-3">
                             <button
                               onClick={() =>
-                                handleToggleBan(
+                                confirmToggleBan(
                                   admin.FirebaseUserID,
                                   admin.IsBanned
                                 )
@@ -360,7 +387,9 @@ const AdminAccountManagement = () => {
                               )}
                             </button>
                             <button
-                              onClick={() => handleDelete(admin.FirebaseUserID)}
+                              onClick={() =>
+                                confirmDelete(admin.FirebaseUserID)
+                              }
                               className="text-red-600 hover:text-red-900"
                               title="Xóa vĩnh viễn"
                             >
@@ -396,6 +425,16 @@ const AdminAccountManagement = () => {
           }}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        isDanger={confirmModal.isDanger}
+        confirmText={confirmModal.confirmText}
+      />
     </>
   );
 };
