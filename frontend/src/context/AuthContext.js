@@ -33,19 +33,27 @@ export const AuthProvider = ({ children }) => {
   const [isBannedModalOpen, setIsBannedModalOpen] = useState(false);
 
   const interceptorId = useRef(null);
+
   const handleUserBanned = async () => {
-    if (!isBannedModalOpen) {
-      setIsBannedModalOpen(true);
+    console.warn("Tài khoản bị khóa. Đang xử lý đăng xuất...");
+    setIsBannedModalOpen(true);
+    try {
       await signOut(auth);
-      setFirebaseUser(null);
-      setAppUser(null);
+    } catch (err) {
+      console.error("Lỗi khi signout:", err);
     }
+    setFirebaseUser(null);
+    setAppUser(null);
   };
 
   useEffect(() => {
     interceptorId.current = apiClient.interceptors.response.use(
       (response) => response,
       async (error) => {
+        if (error.response?.status === 403) {
+          console.log("Interceptor caught 403:", error.response.data);
+        }
+
         if (
           error.response &&
           error.response.status === 403 &&
@@ -62,55 +70,77 @@ export const AuthProvider = ({ children }) => {
         apiClient.interceptors.response.eject(interceptorId.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    let pollingInterval;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
 
       if (user) {
         setFirebaseUser(user);
-        const token = await user.getIdToken();
         try {
-          const response = await authApi.getMe(token);
-          const userData = response.data;
-          if (userData && userData.IsBanned) {
+          const token = await user.getIdToken();
+          try {
+            const response = await authApi.getMe(token);
+            const userData = response.data;
+
+            if (userData && userData.IsBanned) {
+              await handleUserBanned();
+              setLoading(false);
+              return;
+            }
+            setAppUser(userData);
+          } catch (error) {
+            if (error.response && error.response.status === 404) {
+              setAppUser(null);
+            } else {
+              console.error("Lỗi khi gọi getMe:", error);
+            }
+          }
+        } catch (tokenError) {
+          if (tokenError.code === "auth/user-disabled") {
             await handleUserBanned();
             setLoading(false);
             return;
           }
-          setAppUser(userData);
-        } catch (error) {
-          if (error.response && error.response.status === 404) {
-            setAppUser(null);
-          } else {
-            console.error("Lỗi nghiêm trọng khi gọi getMe:", error);
-            setFirebaseUser(null);
-            setAppUser(null);
-          }
         }
-        pollingInterval = setInterval(async () => {
-          const currentToken = await user.getIdToken().catch(() => null);
-          if (currentToken) {
-            authApi.getMe(currentToken).catch(() => {});
-          }
-        }, 60000);
       } else {
         setFirebaseUser(null);
         setAppUser(null);
-        clearInterval(pollingInterval);
       }
       setLoading(false);
     });
 
-    return () => {
-      unsubscribe();
-      clearInterval(pollingInterval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    let pollingInterval;
+
+    if (firebaseUser) {
+      pollingInterval = setInterval(async () => {
+        try {
+          const token = await firebaseUser.getIdToken(true);
+
+          if (token) {
+            await authApi.getMe(token);
+          }
+        } catch (error) {
+          console.error("Polling error:", error);
+          if (
+            error.code === "auth/user-disabled" ||
+            error.code === "auth/user-token-expired"
+          ) {
+            await handleUserBanned();
+          }
+        }
+      }, 5000);
+    }
+
+    return () => {
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
+  }, [firebaseUser]);
 
   const handleCloseBannedModal = () => {
     setIsBannedModalOpen(false);
