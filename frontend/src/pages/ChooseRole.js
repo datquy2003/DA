@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { authApi } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
+import { FiUser, FiBriefcase, FiLogOut } from "react-icons/fi";
+import UnfinishedRegistrationModal from "../components/modals/UnfinishedRegistrationModal";
 
 const ROLE_CANDIDATE = 4;
 const ROLE_EMPLOYER = 3;
@@ -12,6 +14,7 @@ const ChooseRole = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showExitModal, setShowExitModal] = useState(false);
 
   const handleRoleSelect = async (roleID) => {
     if (!firebaseUser) {
@@ -62,8 +65,22 @@ const ChooseRole = () => {
     setLoading(false);
   };
 
+  const handleConfirmExit = async () => {
+    setShowExitModal(false);
+    await logout();
+    navigate("/login");
+  };
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 relative">
+      <div className="absolute top-6 right-6">
+        <button
+          onClick={() => setShowExitModal(true)}
+          className="flex items-center text-gray-500 hover:text-red-600 transition-colors font-medium"
+        >
+          <FiLogOut className="mr-2" /> Đăng xuất
+        </button>
+      </div>
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
         <h2 className="text-3xl font-bold text-center mb-4 text-gray-800">
           Chỉ một bước nữa!
@@ -96,17 +113,17 @@ const ChooseRole = () => {
           <button
             onClick={() => handleRoleSelect(ROLE_CANDIDATE)}
             disabled={loading}
-            className="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 transition duration-300 ease-in-out font-semibold text-lg disabled:opacity-50"
+            className="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 transition duration-300 ease-in-out font-semibold text-lg disabled:opacity-50 flex justify-center items-center"
           >
-            Tôi là Ứng viên (Tìm việc)
+            <FiUser className="mr-2" /> Tôi là Ứng viên (Tìm việc)
           </button>
 
           <button
             onClick={() => handleRoleSelect(ROLE_EMPLOYER)}
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition duration-300 ease-in-out font-semibold text-lg disabled:opacity-50"
+            className="w-full bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition duration-300 ease-in-out font-semibold text-lg disabled:opacity-50 flex justify-center items-center"
           >
-            Tôi là Nhà tuyển dụng (Đăng tin)
+            <FiBriefcase className="mr-2" /> Tôi là Nhà tuyển dụng (Đăng tin)
           </button>
         </div>
 
@@ -115,12 +132,17 @@ const ChooseRole = () => {
         )}
 
         <button
-          onClick={logout}
+          onClick={() => setShowExitModal(true)}
           className="mt-6 text-sm text-gray-600 hover:underline"
         >
           Quay lại (Đăng xuất)
         </button>
       </div>
+      <UnfinishedRegistrationModal
+        isOpen={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        onConfirm={handleConfirmExit}
+      />
     </div>
   );
 };
