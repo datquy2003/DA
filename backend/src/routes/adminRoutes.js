@@ -188,7 +188,7 @@ router.post(
         email: email,
         password: password,
         displayName: displayName,
-        emailVerified: true,
+        emailVerified: false,
       });
 
       const pool = await sql.connect(sqlConfig);
@@ -198,7 +198,7 @@ router.post(
         .input("Email", sql.NVarChar, email)
         .input("DisplayName", sql.NVarChar, displayName)
         .input("RoleID", sql.Int, 1)
-        .input("IsVerified", sql.Bit, 1).query(`
+        .input("IsVerified", sql.Bit, 0).query(`
           INSERT INTO Users (FirebaseUserID, Email, DisplayName, RoleID, IsVerified, CreatedAt, UpdatedAt)
           VALUES (@FirebaseUserID, @Email, @DisplayName, @RoleID, @IsVerified, GETDATE(), GETDATE())
         `);

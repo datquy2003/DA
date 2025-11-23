@@ -241,6 +241,20 @@ const AdminAccountManagement = () => {
       admin.Email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const StatusBadge = ({ isVerified }) => {
+    if (isVerified)
+      return (
+        <span className="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+          Đã xác thực
+        </span>
+      );
+    return (
+      <span className="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded-full">
+        Chưa xác thực
+      </span>
+    );
+  };
+
   return (
     <>
       <div className="space-y-6">
@@ -287,6 +301,9 @@ const AdminAccountManagement = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Trạng thái
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Ngày tạo
@@ -337,6 +354,9 @@ const AdminAccountManagement = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {admin.Email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <StatusBadge isVerified={admin.IsVerified} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex items-center">

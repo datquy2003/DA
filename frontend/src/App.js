@@ -9,6 +9,7 @@ import ChooseRole from "./pages/ChooseRole";
 import ForgotPassword from "./pages/ForgotPassword";
 import MainLayout from "./components/MainLayout";
 import ProfileEdit from "./pages/ProfileEdit";
+import VerifyEmail from "./pages/VerifyEmail";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import UserManagement from "./pages/admin/UserManagement";
@@ -51,8 +52,16 @@ const RoleBasedHome = () => {
 
 function App() {
   const { firebaseUser, appUser } = useAuth();
-  const isAuthenticated = firebaseUser && appUser && appUser.RoleID;
+
+  const isEmailVerified =
+    firebaseUser?.emailVerified ||
+    (firebaseUser?.providerData.length > 0 &&
+      firebaseUser.providerData[0].providerId !== "password");
+
   const isNewUser = firebaseUser && (!appUser || !appUser.RoleID);
+
+  const isUnverifiedAdmin =
+    firebaseUser && appUser?.RoleID === 1 && !isEmailVerified;
 
   return (
     <Routes>
@@ -68,6 +77,12 @@ function App() {
         path="/forgot-password"
         element={!firebaseUser ? <ForgotPassword /> : <Navigate to="/" />}
       />
+
+      <Route
+        path="/verify-email"
+        element={isUnverifiedAdmin ? <VerifyEmail /> : <Navigate to="/" />}
+      />
+
       <Route
         path="/choose-role"
         element={isNewUser ? <ChooseRole /> : <Navigate to="/" />}
@@ -76,20 +91,23 @@ function App() {
       <Route
         path="/"
         element={
-          isAuthenticated ? (
-            <MainLayout />
+          !firebaseUser ? (
+            <Navigate to="/login" />
+          ) : isUnverifiedAdmin ? (
+            <Navigate to="/verify-email" />
           ) : isNewUser ? (
             <Navigate to="/choose-role" />
           ) : (
-            <Navigate to="/login" />
+            <MainLayout />
           )
         }
       >
         <Route index element={<RoleBasedHome />} />
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<Notifications />} />
-        <Route path="profile-edit" element={<ProfileEdit />} />{" "}
+        <Route path="profile-edit" element={<ProfileEdit />} />
         <Route path="vip-upgrade" element={<VipUpgrade />} />
+
         <Route path="candidate/cvs" element={<CvManagement />} />
         <Route path="candidate/applied-jobs" element={<AppliedJobs />} />
         <Route path="candidate/favorite-jobs" element={<FavoriteJobs />} />
@@ -101,6 +119,7 @@ function App() {
           path="candidate/subscription"
           element={<CandidateSubscription />}
         />
+
         <Route path="employer/jobs" element={<JobManagementEmployer />} />
         <Route path="employer/applicants" element={<ApplicantManagement />} />
         <Route
@@ -111,6 +130,7 @@ function App() {
           path="employer/subscription"
           element={<EmployerSubscription />}
         />
+
         <Route path="admin" element={<AdminLayout />}>
           <Route path="users" element={<UserManagement />} />
           <Route path="jobs" element={<JobManagement />} />

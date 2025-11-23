@@ -295,7 +295,7 @@ const UserManagement = () => {
       message: newStatus
         ? "Người dùng sẽ bị đăng xuất ngay lập tức và không thể truy cập hệ thống. Bạn có chắc chắn không?"
         : "Tài khoản này sẽ được kích hoạt trở lại. Bạn có chắc chắn không?",
-      isDanger: newStatus, // Khóa thì màu đỏ, mở khóa màu xanh
+      isDanger: newStatus,
       confirmText: newStatus ? "Khóa ngay" : "Mở khóa",
       onConfirm: () => performToggleBan(uid, newStatus),
     });
