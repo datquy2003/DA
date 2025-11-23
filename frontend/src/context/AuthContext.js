@@ -21,6 +21,7 @@ import { auth } from "../firebase.config.js";
 import { authApi } from "../api/authApi.js";
 import apiClient from "../api/apiClient.js";
 import BannedAccountModal from "../components/modals/BannedAccountModal.js";
+import SessionExpiredModal from "../components/modals/SessionExpiredModal.js";
 
 const AuthContext = createContext();
 
@@ -31,12 +32,11 @@ export const AuthProvider = ({ children }) => {
   const [appUser, setAppUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isBannedModalOpen, setIsBannedModalOpen] = useState(false);
+  const [isSessionExpiredOpen, setIsSessionExpiredOpen] = useState(false);
 
   const interceptorId = useRef(null);
 
-  const handleUserBanned = async () => {
-    console.warn("Tài khoản bị khóa. Đang xử lý đăng xuất...");
-    setIsBannedModalOpen(true);
+  const forceLogout = async () => {
     try {
       await signOut(auth);
     } catch (err) {
@@ -46,20 +46,33 @@ export const AuthProvider = ({ children }) => {
     setAppUser(null);
   };
 
+  const handleUserBanned = async () => {
+    if (!isBannedModalOpen && !isSessionExpiredOpen) {
+      console.warn("Tài khoản bị khóa.");
+      setIsBannedModalOpen(true);
+      setTimeout(() => forceLogout(), 100);
+    }
+  };
+
+  const handleSessionExpired = async () => {
+    if (!isSessionExpiredOpen && !isBannedModalOpen) {
+      console.warn("Tài khoản không tồn tại hoặc hết phiên.");
+      setIsSessionExpiredOpen(true);
+      setTimeout(() => forceLogout(), 100);
+    }
+  };
+
   useEffect(() => {
     interceptorId.current = apiClient.interceptors.response.use(
       (response) => response,
       async (error) => {
         if (error.response?.status === 403) {
-          console.log("Interceptor caught 403:", error.response.data);
-        }
-
-        if (
-          error.response &&
-          error.response.status === 403 &&
-          error.response.data?.code === "ACCOUNT_BANNED"
-        ) {
-          await handleUserBanned();
+          const code = error.response.data?.code;
+          if (code === "ACCOUNT_BANNED") {
+            await handleUserBanned();
+          } else if (code === "ACCOUNT_DELETED") {
+            await handleSessionExpired();
+          }
         }
         return Promise.reject(error);
       }
@@ -70,6 +83,7 @@ export const AuthProvider = ({ children }) => {
         apiClient.interceptors.response.eject(interceptorId.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -103,6 +117,11 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
             return;
           }
+          if (tokenError.code === "auth/user-not-found") {
+            await handleSessionExpired();
+            setLoading(false);
+            return;
+          }
         }
       } else {
         setFirebaseUser(null);
@@ -112,6 +131,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -127,11 +147,13 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (error) {
           console.error("Polling error:", error);
-          if (
-            error.code === "auth/user-disabled" ||
+          if (error.code === "auth/user-disabled") {
+            await handleUserBanned();
+          } else if (
+            error.code === "auth/user-not-found" ||
             error.code === "auth/user-token-expired"
           ) {
-            await handleUserBanned();
+            await handleSessionExpired();
           }
         }
       }, 5000);
@@ -140,10 +162,12 @@ export const AuthProvider = ({ children }) => {
     return () => {
       if (pollingInterval) clearInterval(pollingInterval);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firebaseUser]);
 
-  const handleCloseBannedModal = () => {
+  const handleCloseModal = () => {
     setIsBannedModalOpen(false);
+    setIsSessionExpiredOpen(false);
     window.location.href = "/login";
   };
 
@@ -153,6 +177,15 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       if (error.code === "auth/user-disabled") {
         setIsBannedModalOpen(true);
+        return;
+      }
+      if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-login-credentials"
+      ) {
+        throw new Error("Tài khoản không tồn tại hoặc mật khẩu không đúng.");
       }
       throw error;
     }
@@ -252,7 +285,11 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
       <BannedAccountModal
         isOpen={isBannedModalOpen}
-        onClose={handleCloseBannedModal}
+        onClose={handleCloseModal}
+      />
+      <SessionExpiredModal
+        isOpen={isSessionExpiredOpen}
+        onClose={handleCloseModal}
       />
     </AuthContext.Provider>
   );
