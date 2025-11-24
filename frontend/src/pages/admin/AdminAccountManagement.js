@@ -265,24 +265,24 @@ const AdminAccountManagement = () => {
             </h1>
           </div>
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <FiUserPlus className="mr-2" /> Thêm Admin mới
-          </button>
-        </div>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="relative w-full md:w-80">
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên hoặc email..."
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 bg-gray-50"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <FiSearch className="absolute left-3 top-3 text-gray-400" />
+            </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm flex items-center border">
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="Tìm kiếm theo tên hoặc email..."
-              className="pl-10 pr-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <FiSearch className="absolute left-3 top-3 text-gray-400" />
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
+            >
+              <FiUserPlus className="mr-2" /> Thêm Admin
+            </button>
           </div>
         </div>
 
