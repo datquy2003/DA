@@ -16,6 +16,7 @@ import {
   FiCalendar,
   FiMail,
   FiHelpCircle,
+  FiClock,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/modals/ConfirmationModal";
@@ -422,6 +423,12 @@ const UserManagement = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Liên hệ
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ngày tham gia
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Đăng nhập gần nhất
+                    </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Trạng thái
                     </th>
@@ -556,6 +563,32 @@ const UserManagement = () => {
                               : activeTab === "candidates"
                               ? user.PhoneNumber || "---"
                               : "---"}
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FiCalendar className="mr-1.5 text-gray-400" />
+                            {new Date(user.CreatedAt).toLocaleDateString(
+                              "vi-VN",
+                              { timeZone: "UTC" }
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center">
+                            <FiClock className="mr-1.5 text-gray-400" />
+                            {user.LastLoginAt ? (
+                              new Date(user.LastLoginAt).toLocaleString(
+                                "vi-VN",
+                                { timeZone: "UTC" }
+                              )
+                            ) : (
+                              <span className="text-gray-400 italic">
+                                Chưa đăng nhập lần nào
+                              </span>
+                            )}
                           </div>
                         </td>
 
