@@ -72,7 +72,7 @@ router.get("/users/candidates", checkAuth, checkAdminRole, async (req, res) => {
     const pool = await sql.connect(sqlConfig);
     const result = await pool.request().query(`
       SELECT 
-        u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt,
+        u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt, u.LastLoginAt,
         cp.FullName, cp.PhoneNumber, cp.Address, cp.ProfileSummary, cp.Birthday
       FROM Users u
       LEFT JOIN CandidateProfiles cp ON u.FirebaseUserID = cp.UserID
@@ -91,7 +91,7 @@ router.get("/users/employers", checkAuth, checkAdminRole, async (req, res) => {
     const pool = await sql.connect(sqlConfig);
     const result = await pool.request().query(`
       SELECT 
-        u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt,
+        u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt, u.LastLoginAt,
         c.CompanyName, c.CompanyEmail, c.CompanyPhone, c.WebsiteURL, c.LogoURL, c.Address as CompanyAddress, c.City, c.Country, c.CompanyDescription
       FROM Users u
       LEFT JOIN Companies c ON u.FirebaseUserID = c.OwnerUserID
