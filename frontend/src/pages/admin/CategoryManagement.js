@@ -4,7 +4,6 @@ import {
   FiPlus,
   FiEdit2,
   FiTrash2,
-  FiLayers,
   FiList,
   FiX,
   FiSave,
@@ -329,7 +328,7 @@ const CategoryManagement = () => {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-            <FiLayers className="mr-2 text-blue-600" /> Quản lý Danh mục
+            <span className="mr-2 text-blue-600" /> Quản lý Danh mục
           </h1>
           <div className="flex items-center gap-4 w-full md:w-auto">
             <div className="relative w-full md:w-64">
