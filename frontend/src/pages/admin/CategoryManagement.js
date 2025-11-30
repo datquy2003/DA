@@ -19,6 +19,7 @@ const ManageSpecsModal = ({ category, onClose }) => {
   const [editingSpecId, setEditingSpecId] = useState(null);
   const [editingName, setEditingName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false });
 
   const fetchSpecs = async () => {
     try {
@@ -53,14 +54,26 @@ const ManageSpecsModal = ({ category, onClose }) => {
     }
   };
 
-  const handleDeleteSpec = async (id) => {
-    if (!window.confirm("Bạn chắc chắn muốn xóa chuyên môn này?")) return;
+  const confirmDeleteSpec = (id) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Xóa Chuyên Môn",
+      message:
+        "Bạn có chắc chắn muốn xóa chuyên môn này không? Hành động này không thể hoàn tác.",
+      isDanger: true,
+      confirmText: "Xóa vĩnh viễn",
+      onConfirm: () => performDeleteSpec(id),
+    });
+  };
+
+  const performDeleteSpec = async (id) => {
     try {
       await categoryApi.deleteSpecialization(id);
       toast.success("Đã xóa.");
       setSpecs(specs.filter((s) => s.SpecializationID !== id));
     } catch (error) {
-      toast.error("Lỗi xóa chuyên môn.");
+      const msg = error.response?.data?.message || "Lỗi xóa chuyên môn.";
+      toast.error(msg);
     }
   };
 
@@ -91,29 +104,29 @@ const ManageSpecsModal = ({ category, onClose }) => {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm !mt-0">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col animate-fadeIn">
-        <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center">
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+          <h3 className="flex items-center text-lg font-bold text-gray-800">
             <FiList className="mr-2" /> Chuyên môn thuộc:{" "}
-            <span className="text-blue-600 ml-1">{category.CategoryName}</span>
+            <span className="ml-1 text-blue-600">{category.CategoryName}</span>
           </h3>
           <button onClick={onClose}>
             <FiX size={24} className="text-gray-400 hover:text-gray-600" />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="flex-1 p-6 overflow-y-auto">
           <form onSubmit={handleAddSpec} className="flex gap-2 mb-4">
             <input
               type="text"
               placeholder="Nhập tên chuyên môn mới..."
-              className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="flex-1 px-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
               value={newSpecName}
               onChange={(e) => setNewSpecName(e.target.value)}
             />
             <button
               type="submit"
               disabled={loading || !newSpecName.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium flex-shrink-0"
+              className="flex-shrink-0 px-4 py-2 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? "Đang thêm..." : "Thêm"}
             </button>
@@ -123,11 +136,11 @@ const ManageSpecsModal = ({ category, onClose }) => {
             <input
               type="text"
               placeholder="Tìm kiếm chuyên môn..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 bg-gray-50"
+              className="w-full py-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 bg-gray-50"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <FiSearch className="absolute left-3 top-3 text-gray-400" />
+            <FiSearch className="absolute text-gray-400 left-3 top-3" />
           </div>
 
           <div className="space-y-2">
@@ -135,10 +148,10 @@ const ManageSpecsModal = ({ category, onClose }) => {
               filteredSpecs.map((spec) => (
                 <div
                   key={spec.SpecializationID}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-white hover:shadow-sm transition-all"
+                  className="flex items-center justify-between p-3 transition-all border border-gray-100 rounded-lg bg-gray-50 hover:bg-white hover:shadow-sm"
                 >
                   {editingSpecId === spec.SpecializationID ? (
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center flex-1 gap-2">
                       <input
                         className="flex-1 px-2 py-1 border rounded"
                         value={editingName}
@@ -159,21 +172,21 @@ const ManageSpecsModal = ({ category, onClose }) => {
                     </div>
                   ) : (
                     <>
-                      <span className="text-gray-700 font-medium">
+                      <span className="font-medium text-gray-700">
                         {spec.SpecializationName}
                       </span>
                       <div className="flex space-x-2">
                         <button
                           onClick={() => startEdit(spec)}
-                          className="text-blue-500 hover:text-blue-700 p-1"
+                          className="p-1 text-blue-500 hover:text-blue-700"
                         >
                           <FiEdit2 />
                         </button>
                         <button
                           onClick={() =>
-                            handleDeleteSpec(spec.SpecializationID)
+                            confirmDeleteSpec(spec.SpecializationID)
                           }
-                          className="text-red-500 hover:text-red-700 p-1"
+                          className="p-1 text-red-500 hover:text-red-700"
                         >
                           <FiTrash2 />
                         </button>
@@ -183,7 +196,7 @@ const ManageSpecsModal = ({ category, onClose }) => {
                 </div>
               ))
             ) : (
-              <p className="text-center text-gray-400 py-4 italic">
+              <p className="py-4 italic text-center text-gray-400">
                 {searchTerm
                   ? "Không tìm thấy kết quả."
                   : "Chưa có chuyên môn nào."}
@@ -192,6 +205,15 @@ const ManageSpecsModal = ({ category, onClose }) => {
           </div>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        isDanger={confirmModal.isDanger}
+        confirmText={confirmModal.confirmText}
+      />
     </div>
   );
 };
@@ -225,8 +247,8 @@ const CategoryModal = ({ categoryToEdit, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm !mt-0">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-fadeIn">
-        <div className="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+      <div className="w-full max-w-md bg-white shadow-2xl rounded-xl animate-fadeIn">
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
           <h3 className="text-lg font-bold text-gray-800">
             {categoryToEdit ? "Sửa danh mục" : "Thêm danh mục mới"}
           </h3>
@@ -235,13 +257,13 @@ const CategoryModal = ({ categoryToEdit, onClose, onSuccess }) => {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block mb-1 text-sm font-medium text-gray-700">
             Tên danh mục
           </label>
           <input
             type="text"
             required
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none mb-4"
+            className="w-full px-4 py-2 mb-4 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nhập tên danh mục..."
@@ -250,14 +272,14 @@ const CategoryModal = ({ categoryToEdit, onClose, onSuccess }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 rounded-lg text-gray-700"
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? "Đang lưu..." : "Lưu lại"}
             </button>
@@ -311,7 +333,8 @@ const CategoryManagement = () => {
           toast.success("Đã xóa danh mục.");
           fetchCategories();
         } catch (error) {
-          toast.error("Xóa thất bại.");
+          const msg = error.response?.data?.message || "Xóa thất bại.";
+          toast.error(msg);
         }
       },
     });
@@ -326,20 +349,20 @@ const CategoryManagement = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center">
+        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+          <h1 className="flex items-center text-2xl font-bold text-gray-800">
             <span className="mr-2 text-blue-600" /> Quản lý Danh mục
           </h1>
-          <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex items-center w-full gap-4 md:w-auto">
             <div className="relative w-full md:w-64">
               <input
                 type="text"
                 placeholder="Tìm kiếm danh mục..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full py-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <FiSearch className="absolute left-3 top-3 text-gray-400" />
+              <FiSearch className="absolute text-gray-400 left-3 top-3" />
             </div>
 
             <button
@@ -347,27 +370,27 @@ const CategoryManagement = () => {
                 setEditingCategory(null);
                 setIsCatModalOpen(true);
               }}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors whitespace-nowrap"
+              className="flex items-center px-4 py-2 text-white transition-colors bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 whitespace-nowrap"
             >
               <FiPlus className="mr-2" /> Thêm mới
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+        <div className="overflow-hidden bg-white border border-gray-200 rounded-lg shadow">
           {loading ? (
             <div className="p-8 text-center text-gray-500">Đang tải...</div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Tên Danh Mục
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-center text-gray-500 uppercase">
                     Chuyên môn
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
                     Hành động
                   </th>
                 </tr>
@@ -377,22 +400,22 @@ const CategoryManagement = () => {
                   filteredCategories.map((cat) => (
                     <tr
                       key={cat.CategoryID}
-                      className="hover:bg-gray-50 transition-colors group"
+                      className="transition-colors hover:bg-gray-50 group"
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-gray-900">
                           {cat.CategoryName}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => setSelectedCategoryForSpecs(cat)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center mx-auto hover:underline"
+                          className="flex items-center justify-center mx-auto text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
                         >
                           <FiList className="mr-1" /> Quản lý chuyên môn
                         </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
                         <div className="flex justify-end space-x-3">
                           <button
                             onClick={() => {

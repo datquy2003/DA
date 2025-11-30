@@ -17,9 +17,148 @@ import {
   FiMail,
   FiHelpCircle,
   FiClock,
+  FiStar,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/modals/ConfirmationModal";
+import { formatCurrency } from "../../utils/formatCurrency";
+
+const VipHistory = ({ userId }) => {
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await adminApi.getUserSubscriptions(userId);
+        setHistory(res.data);
+      } catch (error) {
+        console.error("Lỗi tải lịch sử VIP");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [userId]);
+
+  const formatDate = (dateString) =>
+    new Date(dateString).toLocaleDateString("vi-VN", { timeZone: "UTC" });
+
+  const getVietnamTime = () => {
+    const now = new Date();
+    return new Date(now.getTime() + 7 * 60 * 60 * 1000);
+  };
+
+  const getStatusBadge = (item) => {
+    const isOneTime = !item.DurationInDays || item.DurationInDays === 0;
+    const endDate = new Date(item.EndDate);
+    const nowVN = getVietnamTime();
+    const isExpired = endDate.getTime() < nowVN.getTime();
+
+    if (item.Status === 1) {
+      if (!isOneTime && isExpired) {
+        return (
+          <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+            Hết hạn
+          </span>
+        );
+      }
+      return (
+        <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+          Đang dùng
+        </span>
+      );
+    } else if (item.Status === 2) {
+      return (
+        <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+          Hết hạn
+        </span>
+      );
+    } else if (item.Status === 0) {
+      return (
+        <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">
+          Chờ TT
+        </span>
+      );
+    }
+    return <span className="text-xs text-gray-400">---</span>;
+  };
+
+  if (loading)
+    return (
+      <div className="py-4 italic text-center text-gray-500">
+        Đang tải lịch sử...
+      </div>
+    );
+
+  if (history.length === 0)
+    return (
+      <div className="py-6 text-center border border-gray-300 border-dashed rounded-lg bg-gray-50">
+        <FiStar className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+        <p className="text-sm text-gray-500">
+          Chưa có lịch sử đăng ký dịch vụ nào.
+        </p>
+      </div>
+    );
+
+  return (
+    <div className="mt-3 overflow-x-auto border border-gray-200 rounded-lg">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-3 py-2 text-xs font-medium text-left text-gray-500 uppercase">
+              Gói Dịch Vụ
+            </th>
+            <th className="px-3 py-2 text-xs font-medium text-left text-gray-500 uppercase">
+              Giá
+            </th>
+            <th className="px-3 py-2 text-xs font-medium text-left text-gray-500 uppercase">
+              Thời Gian
+            </th>
+            <th className="px-3 py-2 text-xs font-medium text-center text-gray-500 uppercase">
+              Trạng Thái
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {history.map((item) => {
+            const isOneTime = !item.DurationInDays || item.DurationInDays === 0;
+            return (
+              <tr
+                key={item.SubscriptionID}
+                className="text-sm hover:bg-gray-50"
+              >
+                <td className="px-3 py-2">
+                  <div className="font-medium text-gray-900">
+                    {item.PlanName}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {isOneTime ? "Dịch vụ 1 lần" : "Gói định kỳ"}
+                  </div>
+                </td>
+                <td className="px-3 py-2 text-gray-900">
+                  {formatCurrency(item.Price)}
+                </td>
+                <td className="px-3 py-2 text-xs text-gray-500">
+                  {isOneTime ? (
+                    <span>Mua: {formatDate(item.StartDate)}</span>
+                  ) : (
+                    <span>
+                      {formatDate(item.StartDate)} - {formatDate(item.EndDate)}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-center">
+                  {getStatusBadge(item)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 const UserDetailModal = ({ user, type, onClose }) => {
   if (!user) return null;
@@ -40,35 +179,40 @@ const UserDetailModal = ({ user, type, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm !mt-0">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn">
-        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
-          <h3 className="text-lg font-bold text-gray-800 flex items-center">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-fadeIn">
+        <div className="flex items-center justify-between flex-shrink-0 px-6 py-4 bg-gray-100 border-b">
+          <h3 className="flex items-center text-lg font-bold text-gray-800">
             <TypeIcon className="mr-2" /> {title}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors p-1 hover:bg-gray-200 rounded-full"
+            className="p-1 text-gray-500 transition-colors rounded-full hover:text-gray-700 hover:bg-gray-200"
           >
             <FiX size={24} />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
-          <div className="flex flex-col md:flex-row items-center md:items-start mb-8">
+        <div className="flex-1 p-6 overflow-y-auto">
+          <div className="flex flex-col items-center pb-6 mb-8 border-b border-gray-300 border-dashed md:flex-row md:items-start">
             <img
               src={avatarUrl || "https://via.placeholder.com/150"}
               alt="Profile"
-              className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-white shadow-lg mb-4 md:mb-0 md:mr-6 bg-gray-100"
+              className="object-cover w-24 h-24 mb-4 bg-gray-100 border-4 border-white rounded-full shadow-lg md:w-32 md:h-32 md:mb-0 md:mr-6"
             />
-            <div className="text-center md:text-left flex-1 pt-2">
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">
+            <div className="flex-1 pt-2 text-center md:text-left">
+              <h2 className="flex items-center justify-center mb-1 text-2xl font-bold text-gray-900 md:justify-start">
                 {isEmployer
                   ? user.CompanyName
                   : user.FullName || user.DisplayName}
+                {user.CurrentVIP && (
+                  <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                    <FiStar className="mr-1" /> {user.CurrentVIP}
+                  </span>
+                )}
               </h2>
-              <p className="text-gray-500 mb-3">{user.Email}</p>
+              <p className="mb-3 text-gray-500">{user.Email}</p>
 
-              <div className="flex flex-wrap justify-center md:justify-start gap-2">
+              <div className="flex flex-wrap justify-center gap-2 md:justify-start">
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                     user.IsVerified
@@ -79,20 +223,20 @@ const UserDetailModal = ({ user, type, onClose }) => {
                   {user.IsVerified ? "Đã xác thực" : "Chưa xác thực"}
                 </span>
                 {user.IsBanned && (
-                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  <span className="px-3 py-1 text-xs font-medium text-red-800 bg-red-100 rounded-full">
                     Đang bị khóa
                   </span>
                 )}
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                <span className="px-3 py-1 text-xs font-medium text-blue-600 rounded-full bg-blue-50">
                   ID: {user.FirebaseUserID}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider border-b pb-2 mb-3">
+              <h4 className="pb-2 mb-3 text-sm font-semibold tracking-wider text-gray-400 uppercase border-b">
                 Thông tin liên hệ
               </h4>
 
@@ -136,12 +280,12 @@ const UserDetailModal = ({ user, type, onClose }) => {
             </div>
 
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider border-b pb-2 mb-3">
+              <h4 className="pb-2 mb-3 text-sm font-semibold tracking-wider text-gray-400 uppercase border-b">
                 {isEmployer ? "Thông tin doanh nghiệp" : "Thông tin cá nhân"}
               </h4>
 
               {isNoRole ? (
-                <p className="text-sm text-gray-500 italic">
+                <p className="text-sm italic text-gray-500">
                   Tài khoản này chưa hoàn tất việc chọn vai trò (Ứng viên/Nhà
                   tuyển dụng). Chưa có thông tin hồ sơ chi tiết.
                 </p>
@@ -172,24 +316,45 @@ const UserDetailModal = ({ user, type, onClose }) => {
             </div>
 
             {!isNoRole && (
-              <div className="col-span-1 md:col-span-2 mt-2">
-                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider border-b pb-2 mb-3">
+              <div className="col-span-1 mt-2 md:col-span-2">
+                <h4 className="pb-2 mb-3 text-sm font-semibold tracking-wider text-gray-400 uppercase border-b">
                   {isEmployer ? "Mô tả công ty" : "Giới thiệu bản thân"}
                 </h4>
-                <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 leading-relaxed whitespace-pre-line max-h-60 overflow-y-auto border border-gray-100">
+                <div className="p-4 overflow-y-auto text-sm leading-relaxed text-gray-700 whitespace-pre-line border border-gray-100 rounded-lg bg-gray-50 max-h-60">
                   {isEmployer
                     ? user.CompanyDescription || "Chưa có mô tả"
                     : user.ProfileSummary || "Chưa có giới thiệu"}
                 </div>
               </div>
             )}
+
+            {!isNoRole && (
+              <div className="col-span-1 mt-2 md:col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="flex items-center text-sm font-bold tracking-wider text-gray-800 uppercase">
+                    <FiStar className="mr-2 text-yellow-500" /> Gói Dịch Vụ &
+                    Lịch Sử
+                  </h4>
+                  {user.CurrentVIP ? (
+                    <span className="px-3 py-1 text-xs font-bold text-green-600 bg-green-100 rounded-full">
+                      Đang sử dụng: {user.CurrentVIP}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 text-xs font-medium text-gray-500 bg-gray-100 rounded-full">
+                      Tài khoản thường
+                    </span>
+                  )}
+                </div>
+                <VipHistory userId={user.FirebaseUserID} />
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="p-4 border-t bg-gray-50 flex justify-end">
+        <div className="flex justify-end p-4 border-t bg-gray-50">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 font-medium transition-colors"
+            className="px-6 py-2 font-medium text-gray-700 transition-colors bg-white border border-gray-300 rounded-lg hover:bg-gray-100"
           >
             Đóng
           </button>
@@ -201,7 +366,7 @@ const UserDetailModal = ({ user, type, onClose }) => {
 
 const InfoItem = ({ icon, label, value, isLink }) => (
   <div className="flex flex-col">
-    <span className="text-xs text-gray-500 mb-1 flex items-center">
+    <span className="flex items-center mb-1 text-xs text-gray-500">
       {icon && <span className="mr-1.5">{icon}</span>}
       {label}
     </span>
@@ -210,7 +375,7 @@ const InfoItem = ({ icon, label, value, isLink }) => (
         href={value}
         target="_blank"
         rel="noreferrer"
-        className="text-sm font-medium text-blue-600 hover:underline truncate"
+        className="text-sm font-medium text-blue-600 truncate hover:underline"
       >
         {value}
       </a>
@@ -350,8 +515,8 @@ const UserManagement = () => {
 
   return (
     <>
-      <div className="space-y-6 relative">
-        <div className="flex justify-between items-center">
+      <div className="relative space-y-6">
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">
             Quản lý Người dùng
           </h1>
@@ -359,11 +524,11 @@ const UserManagement = () => {
             <input
               type="text"
               placeholder="Tìm kiếm theo tên hoặc email..."
-              className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
+              className="py-2 pl-10 pr-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-80"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <FiSearch className="absolute left-3 top-3 text-gray-400" />
+            <FiSearch className="absolute text-gray-400 left-3 top-3" />
           </div>
         </div>
 
@@ -400,7 +565,7 @@ const UserManagement = () => {
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="overflow-hidden bg-white rounded-lg shadow">
           {loading ? (
             <div className="p-8 text-center text-gray-500">
               Đang tải dữ liệu...
@@ -410,29 +575,34 @@ const UserManagement = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Thông tin tài khoản
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       {activeTab === "employers"
                         ? "Thông tin Công ty"
                         : activeTab === "candidates"
                         ? "Hồ sơ cá nhân"
                         : "Thông tin bổ sung"}
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Liên hệ
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Ngày tham gia
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                       Đăng nhập gần nhất
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {activeTab !== "no-role" && (
+                      <th className="px-6 py-3 text-xs font-medium tracking-wider text-center text-gray-500 uppercase">
+                        Loại tài khoản
+                      </th>
+                    )}
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-center text-gray-500 uppercase">
                       Trạng thái
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-gray-500 uppercase">
                       Hành động
                     </th>
                   </tr>
@@ -450,7 +620,7 @@ const UserManagement = () => {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
+                            <div className="flex-shrink-0 w-10 h-10">
                               <img
                                 className={`h-10 w-10 rounded-full object-cover border ${
                                   user.IsBanned ? "opacity-50 grayscale" : ""
@@ -515,14 +685,14 @@ const UserManagement = () => {
                                   >
                                     {user.WebsiteURL}
                                   </a>
-                                  <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                  <div className="flex items-center mt-1 text-xs text-gray-500">
                                     <FiMapPin className="mr-1" />{" "}
                                     {user.CompanyAddress || "Chưa cập nhật"}
                                   </div>
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-sm text-gray-400 italic">
+                              <span className="text-sm italic text-gray-400">
                                 Chưa cập nhật hồ sơ
                               </span>
                             )
@@ -538,25 +708,25 @@ const UserManagement = () => {
                                 >
                                   {user.FullName}
                                 </div>
-                                <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                <div className="flex items-center mt-1 text-xs text-gray-500">
                                   <FiMapPin className="mr-1" />{" "}
                                   {user.Address || "Chưa cập nhật"}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-sm text-gray-400 italic">
+                              <span className="text-sm italic text-gray-400">
                                 Chưa cập nhật hồ sơ
                               </span>
                             )
                           ) : (
-                            <span className="text-sm text-gray-400 italic">
+                            <span className="text-sm italic text-gray-400">
                               Chưa chọn vai trò
                             </span>
                           )}
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm flex items-center">
+                          <div className="flex items-center text-sm">
                             <FiPhone className="mr-2 text-gray-400" />
                             {activeTab === "employers"
                               ? user.CompanyPhone || "---"
@@ -566,7 +736,7 @@ const UserManagement = () => {
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                           <div className="flex items-center">
                             <FiCalendar className="mr-1.5 text-gray-400" />
                             {new Date(user.CreatedAt).toLocaleDateString(
@@ -576,7 +746,7 @@ const UserManagement = () => {
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                           <div className="flex items-center">
                             <FiClock className="mr-1.5 text-gray-400" />
                             {user.LastLoginAt ? (
@@ -585,19 +755,41 @@ const UserManagement = () => {
                                 { timeZone: "UTC" }
                               )
                             ) : (
-                              <span className="text-gray-400 italic">
+                              <span className="italic text-gray-400">
                                 Chưa đăng nhập lần nào
                               </span>
                             )}
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {activeTab !== "no-role" && (
+                          <td className="px-6 py-4 text-center whitespace-nowrap">
+                            {user.CurrentVIP ? (
+                              <div className="flex flex-col items-center">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 border border-yellow-200 mb-1">
+                                  <FiStar className="mr-1" /> VIP
+                                </span>
+                                <span
+                                  className="text-xs text-gray-500 truncate max-w-[120px]"
+                                  title={user.CurrentVIP}
+                                >
+                                  {user.CurrentVIP}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                Thường
+                              </span>
+                            )}
+                          </td>
+                        )}
+
+                        <td className="px-6 py-4 text-center whitespace-nowrap">
                           <StatusBadge isVerified={user.IsVerified} />
                         </td>
 
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-3 items-center">
+                        <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end space-x-3">
                             <button
                               onClick={() => handleViewDetail(user)}
                               className={`mr-1 ${

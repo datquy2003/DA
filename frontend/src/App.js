@@ -18,6 +18,10 @@ import JobApproval from "./pages/admin/JobApproval";
 import VipManagement from "./pages/admin/VipManagement";
 import CategoryManagement from "./pages/admin/CategoryManagement";
 import AdminAccountManagement from "./pages/admin/AdminAccountManagement";
+import TestUserCreation from "./pages/admin/TestUserCreation"; // Comment dòng này
+
+import EmployerSubscription from "./pages/employer/EmployerSubscription";
+import PaymentResult from "./pages/PaymentResult";
 
 const HomeCandidate = () => <div>Trang chủ ỨNG VIÊN (Role 4)</div>;
 const HomeEmployer = () => <div>Trang chủ NHÀ TUYỂN DỤNG (Role 3)</div>;
@@ -31,7 +35,6 @@ const CandidateSubscription = () => <div>Trang Gói dịch vụ ỨNG VIÊN</div
 const JobManagementEmployer = () => <div>Trang Quản lý tin tuyển dụng</div>;
 const ApplicantManagement = () => <div>Trang Ứng viên ứng tuyển</div>;
 const SearchCandidates = () => <div>Trang Tìm kiếm ứng viên</div>;
-const EmployerSubscription = () => <div>Trang Gói VIP NHÀ TUYỂN DỤNG</div>;
 
 const Messages = () => <div>Trang Nhắn tin</div>;
 const Notifications = () => <div>Trang Thông báo</div>;
@@ -107,6 +110,7 @@ function App() {
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile-edit" element={<ProfileEdit />} />
         <Route path="vip-upgrade" element={<VipUpgrade />} />
+        <Route path="payment/:result" element={<PaymentResult />} />
 
         <Route path="candidate/cvs" element={<CvManagement />} />
         <Route path="candidate/applied-jobs" element={<AppliedJobs />} />
@@ -132,6 +136,8 @@ function App() {
         />
 
         <Route path="admin" element={<AdminLayout />}>
+          <Route path="test-tools" element={<TestUserCreation />} />{" "}
+          {/* Comment dòng bên trên */}
           <Route path="users" element={<UserManagement />} />
           <Route path="jobs" element={<JobManagement />} />
           <Route path="jobs-approval" element={<JobApproval />} />

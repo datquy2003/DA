@@ -67,13 +67,46 @@ router.get("/users/no-role", checkAuth, checkAdminRole, async (req, res) => {
   }
 });
 
+router.get(
+  "/users/:uid/subscriptions",
+  checkAuth,
+  checkAdminRole,
+  async (req, res) => {
+    const { uid } = req.params;
+    try {
+      const pool = await sql.connect(sqlConfig);
+      const result = await pool.request().input("UserID", sql.NVarChar, uid)
+        .query(`
+        SELECT 
+          us.SubscriptionID, us.StartDate, us.EndDate, us.Status, us.PaymentTransactionID,
+          sp.PlanName, sp.Price, sp.PlanType, sp.DurationInDays
+        FROM UserSubscriptions us
+        JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID
+        WHERE us.UserID = @UserID
+        ORDER BY us.StartDate DESC
+      `);
+      res.status(200).json(result.recordset);
+    } catch (error) {
+      console.error("Lỗi lấy lịch sử VIP:", error);
+      res.status(500).json({ message: "Lỗi server." });
+    }
+  }
+);
+
 router.get("/users/candidates", checkAuth, checkAdminRole, async (req, res) => {
   try {
     const pool = await sql.connect(sqlConfig);
     const result = await pool.request().query(`
       SELECT 
         u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt, u.LastLoginAt,
-        cp.FullName, cp.PhoneNumber, cp.Address, cp.ProfileSummary, cp.Birthday
+        cp.FullName, cp.PhoneNumber, cp.Address, cp.ProfileSummary, cp.Birthday,
+        (
+          SELECT TOP 1 sp.PlanName 
+          FROM UserSubscriptions us 
+          JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID 
+          WHERE us.UserID = u.FirebaseUserID AND us.Status = 1 AND us.EndDate > GETDATE()
+          ORDER BY us.EndDate DESC
+        ) AS CurrentVIP
       FROM Users u
       LEFT JOIN CandidateProfiles cp ON u.FirebaseUserID = cp.UserID
       WHERE u.RoleID = 4
@@ -92,7 +125,14 @@ router.get("/users/employers", checkAuth, checkAdminRole, async (req, res) => {
     const result = await pool.request().query(`
       SELECT 
         u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt, u.LastLoginAt,
-        c.CompanyName, c.CompanyEmail, c.CompanyPhone, c.WebsiteURL, c.LogoURL, c.Address as CompanyAddress, c.City, c.Country, c.CompanyDescription
+        c.CompanyName, c.CompanyEmail, c.CompanyPhone, c.WebsiteURL, c.LogoURL, c.Address as CompanyAddress, c.City, c.Country, c.CompanyDescription,
+        (
+          SELECT TOP 1 sp.PlanName 
+          FROM UserSubscriptions us 
+          JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID 
+          WHERE us.UserID = u.FirebaseUserID AND us.Status = 1 AND us.EndDate > GETDATE()
+          ORDER BY us.EndDate DESC
+        ) AS CurrentVIP
       FROM Users u
       LEFT JOIN Companies c ON u.FirebaseUserID = c.OwnerUserID
       WHERE u.RoleID = 3

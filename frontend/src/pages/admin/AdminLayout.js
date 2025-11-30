@@ -8,6 +8,7 @@ import {
   FiLayers,
   FiPackage,
   FiShield,
+  FiTool,
 } from "react-icons/fi";
 
 const AdminLayout = () => {
@@ -26,10 +27,24 @@ const AdminLayout = () => {
 
   return (
     <div className="flex min-h-[calc(100vh-64px)] bg-gray-100">
-      <aside className="w-64 bg-white shadow-sm border-r hidden md:block">
+      <aside className="hidden w-64 bg-white border-r shadow-sm md:block">
         <div className="py-4">
           <nav className="space-y-1">
-            <div className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            {/* Comment từ đoạn này */}
+            <div className="px-4 py-2 text-xs font-semibold tracking-wider text-yellow-600 uppercase">
+              Công cụ Dev
+            </div>
+            <NavLink
+              to="/admin/test-tools"
+              className={({ isActive }) =>
+                isActive ? activeClass : inactiveClass
+              }
+            >
+              <FiTool size={20} />
+              <span>Tạo User Test</span>
+            </NavLink>
+            {/* Tới đoạn này */}
+            <div className="px-4 py-2 text-xs font-semibold tracking-wider text-gray-400 uppercase">
               Người dùng & Tin
             </div>
             <NavLink
@@ -73,7 +88,7 @@ const AdminLayout = () => {
               <span>Quản lý bài tuyển dụng</span>
             </NavLink>
 
-            <div className="px-4 py-2 mt-6 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            <div className="px-4 py-2 mt-6 text-xs font-semibold tracking-wider text-gray-400 uppercase">
               Hệ thống
             </div>
             <NavLink

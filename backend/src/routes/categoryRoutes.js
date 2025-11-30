@@ -59,12 +59,34 @@ router.delete("/:id", checkAuth, checkAdminRole, async (req, res) => {
   const { id } = req.params;
   try {
     const pool = await sql.connect(sqlConfig);
+
+    const checkUsage = await pool.request().input("CategoryID", sql.Int, id)
+      .query(`
+        SELECT TOP 1 1 
+        FROM Jobs 
+        WHERE CategoryID = @CategoryID
+      `);
+
+    if (checkUsage.recordset.length > 0) {
+      return res.status(400).json({
+        message:
+          "Không thể xóa danh mục này vì đang có bài tuyển dụng thuộc danh mục này.",
+      });
+    }
+
     await pool
       .request()
       .input("CategoryID", sql.Int, id)
       .query("DELETE FROM Categories WHERE CategoryID = @CategoryID");
+
     res.status(200).json({ message: "Xóa danh mục thành công." });
   } catch (error) {
+    console.error("Lỗi xóa category:", error);
+    if (error.number === 547) {
+      return res.status(400).json({
+        message: "Không thể xóa vì dữ liệu đang được sử dụng ở nơi khác.",
+      });
+    }
     res.status(500).json({ message: "Lỗi khi xóa danh mục." });
   }
 });
@@ -131,14 +153,37 @@ router.delete(
     const { id } = req.params;
     try {
       const pool = await sql.connect(sqlConfig);
+
+      const checkUsage = await pool
+        .request()
+        .input("SpecializationID", sql.Int, id)
+        .query(
+          "SELECT TOP 1 1 FROM Jobs WHERE SpecializationID = @SpecializationID"
+        );
+
+      if (checkUsage.recordset.length > 0) {
+        return res.status(400).json({
+          message:
+            "Không thể xóa chuyên môn này vì đang có bài tuyển dụng sử dụng nó.",
+        });
+      }
+
       await pool
         .request()
         .input("SpecializationID", sql.Int, id)
         .query(
           "DELETE FROM Specializations WHERE SpecializationID = @SpecializationID"
         );
+
       res.status(200).json({ message: "Xóa chuyên môn thành công." });
     } catch (error) {
+      console.error("Lỗi xóa spec:", error);
+      if (error.number === 547) {
+        return res.status(400).json({
+          message:
+            "Không thể xóa vì dữ liệu đang được sử dụng ở nơi khác (Ví dụ: Hồ sơ ứng viên).",
+        });
+      }
       res.status(500).json({ message: "Lỗi khi xóa chuyên môn." });
     }
   }

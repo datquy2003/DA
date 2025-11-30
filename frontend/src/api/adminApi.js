@@ -28,6 +28,10 @@ const getUsersNoRole = () => {
   return apiClient.get("/admin/users/no-role");
 };
 
+const getUserSubscriptions = (uid) => {
+  return apiClient.get(`/admin/users/${uid}/subscriptions`);
+};
+
 export const adminApi = {
   getCandidates,
   getEmployers,
@@ -36,4 +40,5 @@ export const adminApi = {
   getSystemAdmins,
   createSystemAdmin,
   getUsersNoRole,
+  getUserSubscriptions,
 };

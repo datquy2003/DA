@@ -43,8 +43,20 @@ router.get("/me", checkAuth, async (req, res) => {
     try {
       let userResult = await transaction
         .request()
-        .input("FirebaseUserID", sql.NVarChar, firebaseUid)
-        .query("SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID");
+        .input("FirebaseUserID", sql.NVarChar, firebaseUid).query(`
+          SELECT *,
+            (
+              SELECT TOP 1 ISNULL(us.SnapshotPlanName, sp.PlanName)
+              FROM UserSubscriptions us 
+              LEFT JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID 
+              WHERE us.UserID = Users.FirebaseUserID 
+                AND us.Status = 1 
+                AND us.EndDate > GETDATE()
+              ORDER BY us.EndDate DESC
+            ) AS CurrentVIP
+          FROM Users 
+          WHERE FirebaseUserID = @FirebaseUserID
+        `);
 
       if (userResult.recordset.length === 0) {
         await transaction
@@ -170,7 +182,7 @@ router.get("/me", checkAuth, async (req, res) => {
       }
 
       await transaction.commit();
-      res.status(200).json(userFromDB);
+      res.status(200).json(userResult.recordset[0]);
     } catch (err) {
       await transaction.rollback();
       throw err;

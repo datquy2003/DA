@@ -17,7 +17,7 @@ import {
   fetchSignInMethodsForEmail,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import { auth } from "../firebase.config.js";
+import { auth } from "../firebase/firebase.config.js";
 import { authApi } from "../api/authApi.js";
 import apiClient from "../api/apiClient.js";
 import BannedAccountModal from "../components/modals/BannedAccountModal.js";
@@ -255,14 +255,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const manualReloadFirebaseUser = async () => {
-    if (auth.currentUser) {
-      try {
-        await auth.currentUser.reload();
-        await auth.currentUser.getIdToken(true);
-        return auth.currentUser;
-      } catch (error) {
-        console.error("Lỗi khi reload user:", error);
+    if (!auth.currentUser) return null;
+
+    try {
+      await auth.currentUser.reload();
+      setFirebaseUser(auth.currentUser);
+
+      const token = await auth.currentUser.getIdToken(true);
+      const response = await authApi.getMe(token);
+      setAppUser(response.data);
+
+      return auth.currentUser;
+    } catch (error) {
+      console.error("Lỗi khi reload user:", error);
+
+      if (error.code === "auth/user-disabled") {
+        await handleUserBanned();
+      } else if (
+        error.code === "auth/user-not-found" ||
+        error.code === "auth/user-token-expired"
+      ) {
+        await handleSessionExpired();
+      } else if (error.response?.status === 404) {
+        setAppUser(null);
       }
+
+      return null;
     }
   };
 

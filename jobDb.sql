@@ -245,8 +245,9 @@ CREATE TABLE SubscriptionPlans (
     PlanName nvarchar(100) NOT NULL,
     RoleID int NOT NULL, 
     Price decimal(18, 2) NOT NULL,
-    DurationInDays int NOT NULL,
+    DurationInDays int,
     Features ntext, 
+	PlanType nvarchar(50),
     
     CONSTRAINT FK_SubscriptionPlans_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
@@ -264,6 +265,11 @@ CREATE TABLE UserSubscriptions (
     -- CẬP NHẬT: Status kiểu TINYINT
     -- 0: Chờ thanh toán, 1: Đang hoạt động, 2: Hết hạn, 3: Đã hủy
     Status TINYINT NOT NULL DEFAULT 0, 
+
+	SnapshotPlanName nvarchar(100),
+	SnapshotFeatures ntext,
+	SnapshotPrice decimal(18,2),
+	SnapshotPlanType nvarchar(50),
     
     CONSTRAINT FK_UserSubscriptions_Users FOREIGN KEY (UserID) REFERENCES Users(FirebaseUserID),
     CONSTRAINT FK_UserSubscriptions_Plans FOREIGN KEY (PlanID) REFERENCES SubscriptionPlans(PlanID)

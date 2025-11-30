@@ -1,5 +1,5 @@
 import axios from "axios";
-import { auth } from "../firebase.config";
+import { auth } from "../firebase/firebase.config";
 
 const apiClient = axios.create({
   baseURL: "http://localhost:8080/api",

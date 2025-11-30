@@ -76,7 +76,7 @@ const ProfileMenu = () => {
       {!isAdmin && (
         <Link
           to="/messages"
-          className="text-gray-600 hover:text-blue-600 relative"
+          className="relative text-gray-600 hover:text-blue-600"
         >
           <FiMessageSquare size={24} />
         </Link>
@@ -84,7 +84,7 @@ const ProfileMenu = () => {
       {!isAdmin && (
         <Link
           to="/notifications"
-          className="text-gray-600 hover:text-blue-600 relative"
+          className="relative text-gray-600 hover:text-blue-600"
         >
           <FiBell size={24} />
         </Link>
@@ -99,12 +99,12 @@ const ProfileMenu = () => {
             <img
               src={photoToDisplay}
               alt="Avatar"
-              className="w-7 h-7 rounded-full object-cover"
+              className="object-cover rounded-full w-7 h-7"
             />
           ) : (
             <FaUserCircle size={28} className="text-gray-400" />
           )}
-          <span className="font-medium text-sm hidden md:block">
+          <span className="hidden text-sm font-medium md:block">
             {appUser?.DisplayName || "Tài khoản"}
           </span>
           <FiChevronDown
@@ -116,7 +116,7 @@ const ProfileMenu = () => {
         </button>
 
         {isDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 border z-50">
+          <div className="absolute right-0 z-50 w-56 py-1 mt-2 bg-white border rounded-md shadow-lg">
             <Link
               to="/profile-edit"
               className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -133,10 +133,10 @@ const ProfileMenu = () => {
                 <FiStar className="mr-2" /> Nâng cấp VIP
               </Link>
             )}
-            <div className="border-t my-1"></div>
+            <div className="my-1 border-t"></div>
             <button
               onClick={handleLogout}
-              className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+              className="flex items-center w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-gray-100"
             >
               <FiLogOut className="mr-2" /> Đăng xuất
             </button>
@@ -149,9 +149,9 @@ const ProfileMenu = () => {
 
 const CandidateHeader = () => {
   return (
-    <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
-      <div className="flex justify-between items-center h-16 px-4">
-        <div className="flex space-x-6 h-full">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+      <div className="flex items-center justify-between h-16 px-4">
+        <div className="flex h-full space-x-6">
           <HeaderNavLink to="/">
             <FiHome className="mr-1.5" /> Trang chủ
           </HeaderNavLink>
@@ -168,7 +168,7 @@ const CandidateHeader = () => {
             <FiSlash className="mr-1.5" /> Công ty đã chặn
           </HeaderNavLink>
           <HeaderNavLink to="/candidate/subscription">
-            <FiPackage className="mr-1.5" /> Gói dịch vụ
+            <FiPackage className="mr-1.5" /> Gói VIP
           </HeaderNavLink>
         </div>
         <ProfileMenu />
@@ -179,9 +179,9 @@ const CandidateHeader = () => {
 
 const EmployerHeader = () => {
   return (
-    <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
-      <div className="flex justify-between items-center h-16 px-4">
-        <div className="flex space-x-6 h-full">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+      <div className="flex items-center justify-between h-16 px-4">
+        <div className="flex h-full space-x-6">
           <HeaderNavLink to="/">
             <FiHome className="mr-1.5" /> Trang chủ
           </HeaderNavLink>
@@ -195,7 +195,7 @@ const EmployerHeader = () => {
             <FiSearch className="mr-1.5" /> Tìm kiếm
           </HeaderNavLink>
           <HeaderNavLink to="/employer/subscription">
-            <FiStar className="mr-1.5" /> Gói VIP
+            <FiPackage className="mr-1.5" /> Gói VIP
           </HeaderNavLink>
         </div>
         <ProfileMenu />
@@ -206,9 +206,9 @@ const EmployerHeader = () => {
 
 const AdminHeader = () => {
   return (
-    <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
-      <div className="flex justify-between items-center h-16 px-4">
-        <div className="flex space-x-6 h-full">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+      <div className="flex items-center justify-between h-16 px-4">
+        <div className="flex h-full space-x-6">
           <HeaderNavLink to="/admin/users">
             <FiHome className="mr-1.5" /> Trang chủ
           </HeaderNavLink>
