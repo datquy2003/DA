@@ -12,7 +12,6 @@ import {
   FiTrash2,
   FiInfo,
   FiX,
-  FiGlobe,
   FiCalendar,
   FiMail,
   FiHelpCircle,
@@ -261,15 +260,6 @@ const UserDetailModal = ({ user, type, onClose }) => {
                 </>
               )}
 
-              {isEmployer && (
-                <InfoItem
-                  icon={<FiGlobe />}
-                  label="Website"
-                  value={user.WebsiteURL}
-                  isLink
-                />
-              )}
-
               <InfoItem
                 icon={<FiCalendar />}
                 label="Ngày tham gia"
@@ -295,6 +285,8 @@ const UserDetailModal = ({ user, type, onClose }) => {
                     label="Tên người đại diện"
                     value={user.DisplayName}
                   />
+                  <InfoItem label="Website" value={user.WebsiteURL} isLink />
+                  <InfoItem label="Email công ty" value={user.CompanyEmail} />
                   <InfoItem label="Thành phố" value={user.City} />
                   <InfoItem label="Quốc gia" value={user.Country} />
                 </>

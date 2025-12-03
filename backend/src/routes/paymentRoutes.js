@@ -78,7 +78,6 @@ router.post("/verify-payment", checkAuth, async (req, res) => {
     }
 
     const pool = await sql.connect(sqlConfig);
-
     const transaction = new sql.Transaction(pool);
     await transaction.begin();
 
@@ -113,11 +112,7 @@ router.post("/verify-payment", checkAuth, async (req, res) => {
       const startDate = toVietnamTime();
       let endDate = new Date(startDate);
 
-      if (
-        plan.PlanType === "SUBSCRIPTION" &&
-        plan.DurationInDays &&
-        plan.DurationInDays > 0
-      ) {
+      if (plan.PlanType === "SUBSCRIPTION" && plan.DurationInDays > 0) {
         endDate.setDate(endDate.getDate() + plan.DurationInDays);
       } else {
         endDate.setFullYear(startDate.getFullYear() + 1000);
@@ -134,13 +129,23 @@ router.post("/verify-payment", checkAuth, async (req, res) => {
         .input("SnapshotPlanName", sql.NVarChar, plan.PlanName)
         .input("SnapshotFeatures", sql.NText, plan.Features)
         .input("SnapshotPrice", sql.Decimal(18, 2), plan.Price)
-        .input("SnapshotPlanType", sql.NVarChar, plan.PlanType).query(`
+        .input("SnapshotPlanType", sql.NVarChar, plan.PlanType)
+        .input("Snapshot_JobPostDaily", sql.Int, plan.Limit_JobPostDaily || 0)
+        .input("Snapshot_PushTopDaily", sql.Int, plan.Limit_PushTopDaily || 0)
+        .input(
+          "Snapshot_PushTopInterval",
+          sql.Int,
+          plan.Limit_PushTopInterval || 1
+        )
+        .input("Snapshot_CVStorage", sql.Int, plan.Limit_CVStorage || 0).query(`
           INSERT INTO UserSubscriptions 
           (UserID, PlanID, StartDate, EndDate, PaymentTransactionID, Status, 
-           SnapshotPlanName, SnapshotFeatures, SnapshotPrice, SnapshotPlanType)
+           SnapshotPlanName, SnapshotFeatures, SnapshotPrice, SnapshotPlanType,
+           Snapshot_JobPostDaily, Snapshot_PushTopDaily, Snapshot_PushTopInterval, Snapshot_CVStorage)
           VALUES 
           (@UserID, @PlanID, @StartDate, @EndDate, @PaymentTransactionID, @Status,
-           @SnapshotPlanName, @SnapshotFeatures, @SnapshotPrice, @SnapshotPlanType)
+           @SnapshotPlanName, @SnapshotFeatures, @SnapshotPrice, @SnapshotPlanType,
+           @Snapshot_JobPostDaily, @Snapshot_PushTopDaily, @Snapshot_PushTopInterval, @Snapshot_CVStorage)
         `);
 
       await transaction.commit();
@@ -153,9 +158,7 @@ router.post("/verify-payment", checkAuth, async (req, res) => {
       throw transError;
     }
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Lỗi xác thực thanh toán: " + error.message });
+    res.status(500).json({ message: "Lỗi xác thực thanh toán." });
   }
 });
 

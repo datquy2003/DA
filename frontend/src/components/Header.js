@@ -8,7 +8,6 @@ import {
   FiMessageSquare,
   FiChevronDown,
   FiEdit,
-  FiStar,
   FiLogOut,
   FiBriefcase,
   FiFileText,
@@ -19,6 +18,8 @@ import {
   FiClipboard,
   FiUsers,
   FiSearch,
+  FiLock,
+  FiStar,
 } from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
 
@@ -46,6 +47,11 @@ const ProfileMenu = () => {
   const { appUser, logout, firebaseUser } = useAuth();
   const dropdownRef = useRef(null);
   const isAdmin = appUser?.RoleID === 1 || appUser?.RoleID === 2;
+  const isPasswordUser = firebaseUser?.providerData.some(
+    (provider) => provider.providerId === "password"
+  );
+  const isVipUser = Boolean(appUser?.CurrentVIP);
+  const vipPlanName = appUser?.CurrentVIP;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -104,9 +110,18 @@ const ProfileMenu = () => {
           ) : (
             <FaUserCircle size={28} className="text-gray-400" />
           )}
-          <span className="hidden text-sm font-medium md:block">
-            {appUser?.DisplayName || "Tài khoản"}
-          </span>
+          <div className="items-center hidden space-x-1 md:flex">
+            <span className="text-sm font-medium">
+              {appUser?.DisplayName || "Tài khoản"}
+            </span>
+            {isVipUser && (
+              <FiStar
+                size={14}
+                className="text-yellow-500"
+                title={vipPlanName || "VIP"}
+              />
+            )}
+          </div>
           <FiChevronDown
             size={16}
             className={`transition-transform duration-200 ${
@@ -124,13 +139,13 @@ const ProfileMenu = () => {
             >
               <FiEdit className="mr-2" /> Chỉnh sửa thông tin
             </Link>
-            {!isAdmin && (
+            {isPasswordUser && (
               <Link
-                to="/vip-upgrade"
+                to="/change-password"
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setIsDropdownOpen(false)}
               >
-                <FiStar className="mr-2" /> Nâng cấp VIP
+                <FiLock className="mr-2" /> Đổi mật khẩu
               </Link>
             )}
             <div className="my-1 border-t"></div>

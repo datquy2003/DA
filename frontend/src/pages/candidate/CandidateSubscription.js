@@ -1,45 +1,45 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { FiCheck, FiLoader, FiPackage } from "react-icons/fi";
+import toast from "react-hot-toast";
 import { vipApi } from "../../api/vipApi";
 import { paymentApi } from "../../api/paymentApi";
-import { FiCheck, FiLoader, FiPackage } from "react-icons/fi";
-import { useLocation } from "react-router-dom";
-import toast from "react-hot-toast";
-import { useAuth } from "../../context/AuthContext";
-import { DEFAULT_LIMITS } from "../../constants/limitConstants";
 import { formatCurrency } from "../../utils/formatCurrency";
+import { DEFAULT_LIMITS } from "../../constants/limitConstants";
+import { useAuth } from "../../context/AuthContext";
 
 const FREE_PLAN = {
   PlanID: "FREE_PLAN",
   PlanName: "Gói Cơ Bản (Miễn Phí)",
   Price: 0,
   DurationInDays: 0,
-  Features: `Đẩy top bài tuyển dụng ${DEFAULT_LIMITS.EMPLOYER.PUSH_TOP_QTY} lần/tuần
-  Đăng tối đa ${DEFAULT_LIMITS.EMPLOYER.JOB_POST_DAILY} bài viết/ngày`,
+  Features: `Đẩy top hồ sơ ${DEFAULT_LIMITS.CANDIDATE.PUSH_TOP_QTY} lần/tuần
+Lưu trữ tối đa ${DEFAULT_LIMITS.CANDIDATE.CV_STORAGE} CV`,
   PlanType: "SUBSCRIPTION",
 };
 
-const EmployerSubscription = () => {
+const CandidateSubscription = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingPlanId, setProcessingPlanId] = useState(null);
-  const { appUser, manualReloadFirebaseUser } = useAuth();
   const location = useLocation();
+  const { appUser, manualReloadFirebaseUser } = useAuth();
 
   const isVip = !!appUser?.CurrentVIP;
-  const currentVipName = appUser?.CurrentVIP;
+  const currentVipName = appUser?.CurrentVIP || null;
 
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const res = await vipApi.getVipPackages(3);
-        const subscriptionPlans = res.data.filter(
+        const res = await vipApi.getVipPackages(4);
+        const subscriptionPlans = (res.data || []).filter(
           (pkg) => pkg.PlanType === "SUBSCRIPTION"
         );
-
         setPlans([FREE_PLAN, ...subscriptionPlans]);
       } catch (error) {
-        console.error(error);
+        console.error("Lỗi tải gói VIP ứng viên:", error);
         toast.error("Không thể tải danh sách gói dịch vụ.");
+        setPlans([FREE_PLAN]);
       } finally {
         setLoading(false);
       }
@@ -55,22 +55,26 @@ const EmployerSubscription = () => {
   }, [location.state, manualReloadFirebaseUser]);
 
   const handleBuyPackage = async (plan) => {
+    if (plan.PlanID === "FREE_PLAN") return;
+
     setProcessingPlanId(plan.PlanID);
     const toastId = toast.loading("Đang tạo cổng thanh toán...");
 
     try {
       const response = await paymentApi.createCheckoutSession(plan.PlanID);
-
       if (response.data && response.data.url) {
         window.location.href = response.data.url;
       } else {
         toast.error("Không nhận được đường dẫn thanh toán.", { id: toastId });
+        setProcessingPlanId(null);
       }
     } catch (error) {
-      console.error("Lỗi thanh toán:", error);
-      toast.error("Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.", {
-        id: toastId,
-      });
+      console.error("Lỗi thanh toán ứng viên:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Lỗi khi khởi tạo thanh toán. Vui lòng thử lại.",
+        { id: toastId }
+      );
       setProcessingPlanId(null);
     }
   };
@@ -87,11 +91,11 @@ const EmployerSubscription = () => {
     <div className="max-w-[1920px] mx-auto px-4 py-8">
       <div className="mb-12 text-center">
         <h1 className="mb-4 text-3xl font-bold text-gray-900">
-          Nâng cấp tài khoản tuyển dụng
+          Nâng cấp tài khoản ứng viên
         </h1>
         <p className="max-w-2xl mx-auto text-gray-600">
-          Chọn gói dịch vụ phù hợp để tiếp cận hàng ngàn ứng viên tiềm năng và
-          tối ưu hóa quy trình tuyển dụng của bạn.
+          Tăng độ hiển thị hồ sơ, mở khóa giới hạn CV và nhận huy hiệu xác thực
+          để nổi bật trước nhà tuyển dụng.
         </p>
       </div>
 
@@ -117,18 +121,16 @@ const EmployerSubscription = () => {
                 buttonClass =
                   "bg-green-100 text-green-700 border-green-200 cursor-default";
               }
-            } else {
-              if (currentVipName === plan.PlanName) {
-                buttonText = "Đang sử dụng";
-                isDisabled = true;
-                buttonClass =
-                  "bg-green-100 text-green-700 border-green-200 cursor-default";
-              } else if (isVip) {
-                buttonText = "Đang dùng gói khác";
-                isDisabled = true;
-                buttonClass =
-                  "bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed";
-              }
+            } else if (currentVipName === plan.PlanName) {
+              buttonText = "Đang sử dụng";
+              isDisabled = true;
+              buttonClass =
+                "bg-green-100 text-green-700 border-green-200 cursor-default";
+            } else if (isVip) {
+              buttonText = "Đang dùng gói khác";
+              isDisabled = true;
+              buttonClass =
+                "bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed";
             }
 
             return (
@@ -164,7 +166,7 @@ const EmployerSubscription = () => {
                   </div>
 
                   <ul className="flex-1 mb-6 space-y-3">
-                    {plan.Features.split("\n").map((feature, index) => (
+                    {plan.Features?.split("\n").map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <div className="flex-shrink-0">
                           <FiCheck
@@ -208,4 +210,4 @@ const EmployerSubscription = () => {
   );
 };
 
-export default EmployerSubscription;
+export default CandidateSubscription;

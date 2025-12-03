@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import MainLayout from "./components/MainLayout";
 import ProfileEdit from "./pages/ProfileEdit";
 import VerifyEmail from "./pages/VerifyEmail";
+import ChangePassword from "./pages/ChangePassword";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import UserManagement from "./pages/admin/UserManagement";
@@ -20,6 +21,7 @@ import CategoryManagement from "./pages/admin/CategoryManagement";
 import AdminAccountManagement from "./pages/admin/AdminAccountManagement";
 import TestUserCreation from "./pages/admin/TestUserCreation"; // Comment dòng này
 
+import CandidateSubscription from "./pages/candidate/CandidateSubscription";
 import EmployerSubscription from "./pages/employer/EmployerSubscription";
 import PaymentResult from "./pages/PaymentResult";
 
@@ -30,15 +32,12 @@ const CvManagement = () => <div>Trang Quản lý CV</div>;
 const AppliedJobs = () => <div>Trang Việc đã ứng tuyển</div>;
 const FavoriteJobs = () => <div>Trang Việc yêu thích</div>;
 const BlockedCompanies = () => <div>Trang Công ty đã chặn</div>;
-const CandidateSubscription = () => <div>Trang Gói dịch vụ ỨNG VIÊN</div>;
-
 const JobManagementEmployer = () => <div>Trang Quản lý tin tuyển dụng</div>;
 const ApplicantManagement = () => <div>Trang Ứng viên ứng tuyển</div>;
 const SearchCandidates = () => <div>Trang Tìm kiếm ứng viên</div>;
 
 const Messages = () => <div>Trang Nhắn tin</div>;
 const Notifications = () => <div>Trang Thông báo</div>;
-const VipUpgrade = () => <div>Trang Nâng cấp VIP (Chung)</div>;
 
 const RoleBasedHome = () => {
   const { appUser } = useAuth();
@@ -109,7 +108,7 @@ function App() {
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="profile-edit" element={<ProfileEdit />} />
-        <Route path="vip-upgrade" element={<VipUpgrade />} />
+        <Route path="change-password" element={<ChangePassword />} />
         <Route path="payment/:result" element={<PaymentResult />} />
 
         <Route path="candidate/cvs" element={<CvManagement />} />

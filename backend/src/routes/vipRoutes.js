@@ -44,8 +44,18 @@ router.get("/", async (req, res) => {
 });
 
 router.post("/", checkAuth, checkAdminRole, async (req, res) => {
-  const { RoleID, PlanName, Price, DurationInDays, Features, PlanType } =
-    req.body;
+  const {
+    RoleID,
+    PlanName,
+    Price,
+    DurationInDays,
+    Features,
+    PlanType,
+    Limit_JobPostDaily,
+    Limit_PushTopDaily,
+    Limit_PushTopInterval,
+    Limit_CVStorage,
+  } = req.body;
 
   if (!PlanName || !RoleID || !PlanType) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc." });
@@ -61,12 +71,24 @@ router.post("/", checkAuth, checkAdminRole, async (req, res) => {
       .input(
         "DurationInDays",
         sql.Int,
-        PlanType === "SUBSCRIPTION" && DurationInDays ? DurationInDays : null
+        PlanType === "SUBSCRIPTION" && DurationInDays > 0
+          ? DurationInDays
+          : null
       )
       .input("Features", sql.NText, Features || "")
-      .input("PlanType", sql.NVarChar, PlanType).query(`
-        INSERT INTO SubscriptionPlans (RoleID, PlanName, Price, DurationInDays, Features, PlanType)
-        VALUES (@RoleID, @PlanName, @Price, @DurationInDays, @Features, @PlanType)
+      .input("PlanType", sql.NVarChar, PlanType)
+      .input("Limit_JobPostDaily", sql.Int, Limit_JobPostDaily || 0)
+      .input("Limit_PushTopDaily", sql.Int, Limit_PushTopDaily || 0)
+      .input("Limit_PushTopInterval", sql.Int, Limit_PushTopInterval || 1)
+      .input("Limit_CVStorage", sql.Int, Limit_CVStorage || 0).query(`
+        INSERT INTO SubscriptionPlans (
+          RoleID, PlanName, Price, DurationInDays, Features, PlanType,
+          Limit_JobPostDaily, Limit_PushTopDaily, Limit_PushTopInterval, Limit_CVStorage
+        )
+        VALUES (
+          @RoleID, @PlanName, @Price, @DurationInDays, @Features, @PlanType,
+          @Limit_JobPostDaily, @Limit_PushTopDaily, @Limit_PushTopInterval, @Limit_CVStorage
+        )
       `);
     res.status(201).json({ message: "Thêm gói thành công." });
   } catch (error) {
@@ -77,7 +99,17 @@ router.post("/", checkAuth, checkAdminRole, async (req, res) => {
 
 router.put("/:id", checkAuth, checkAdminRole, async (req, res) => {
   const { id } = req.params;
-  const { PlanName, Price, DurationInDays, Features, PlanType } = req.body;
+  const {
+    PlanName,
+    Price,
+    DurationInDays,
+    Features,
+    PlanType,
+    Limit_JobPostDaily,
+    Limit_PushTopDaily,
+    Limit_PushTopInterval,
+    Limit_CVStorage,
+  } = req.body;
 
   try {
     const pool = await sql.connect(sqlConfig);
@@ -89,16 +121,26 @@ router.put("/:id", checkAuth, checkAdminRole, async (req, res) => {
       .input(
         "DurationInDays",
         sql.Int,
-        PlanType === "SUBSCRIPTION" && DurationInDays ? DurationInDays : null
+        PlanType === "SUBSCRIPTION" && DurationInDays > 0
+          ? DurationInDays
+          : null
       )
       .input("Features", sql.NText, Features)
-      .input("PlanType", sql.NVarChar, PlanType).query(`
+      .input("PlanType", sql.NVarChar, PlanType)
+      .input("Limit_JobPostDaily", sql.Int, Limit_JobPostDaily || 0)
+      .input("Limit_PushTopDaily", sql.Int, Limit_PushTopDaily || 0)
+      .input("Limit_PushTopInterval", sql.Int, Limit_PushTopInterval || 1)
+      .input("Limit_CVStorage", sql.Int, Limit_CVStorage || 0).query(`
         UPDATE SubscriptionPlans 
         SET PlanName = @PlanName, 
             Price = @Price, 
             DurationInDays = @DurationInDays, 
             Features = @Features,
-            PlanType = @PlanType
+            PlanType = @PlanType,
+            Limit_JobPostDaily = @Limit_JobPostDaily,
+            Limit_PushTopDaily = @Limit_PushTopDaily,
+            Limit_PushTopInterval = @Limit_PushTopInterval,
+            Limit_CVStorage = @Limit_CVStorage
         WHERE PlanID = @PlanID
       `);
     res.status(200).json({ message: "Cập nhật thành công." });

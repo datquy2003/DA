@@ -74,13 +74,13 @@ GO
 -- Bảng 6: CandidateProfiles (Hồ sơ Ứng viên DẠNG CÓ CẤU TRÚC)
 CREATE TABLE CandidateProfiles (
     UserID nvarchar(128) PRIMARY KEY NOT NULL,
-    SpecializationID int, -- Chuyên môn chính của ứng viên
     FullName nvarchar(100),
     PhoneNumber nvarchar(20),
     Birthday date,
     Address nvarchar(255),
     ProfileSummary ntext,
-    IsSearchable bit DEFAULT 0, 
+    IsSearchable bit DEFAULT 0,
+	LastPushedAt datetime,
     
     CONSTRAINT FK_CandidateProfiles_Users FOREIGN KEY (UserID) REFERENCES Users(FirebaseUserID) ON DELETE CASCADE,
     CONSTRAINT FK_CandidateProfiles_Specializations FOREIGN KEY (SpecializationID) REFERENCES Specializations(SpecializationID)
@@ -107,12 +107,23 @@ CREATE TABLE Companies (
 );
 GO
 
+-- Bảng 8: CandidateSpecializations (Các chuyên môn của ứng viên)
+CREATE TABLE CandidateSpecializations (
+    CandidateID nvarchar(128) NOT NULL,
+    SpecializationID int NOT NULL,
+    
+    CONSTRAINT PK_CandidateSpecializations PRIMARY KEY (CandidateID, SpecializationID),
+    CONSTRAINT FK_CandidateSpec_Users FOREIGN KEY (CandidateID) REFERENCES Users(FirebaseUserID) ON DELETE CASCADE,
+    CONSTRAINT FK_CandidateSpec_Specs FOREIGN KEY (SpecializationID) REFERENCES Specializations(SpecializationID) ON DELETE CASCADE
+);
+GO
+
 /* ----------------------------------------------------------------
   NHÓM 3: QUẢN LÝ VIỆC LÀM & CV
 ----------------------------------------------------------------
 */
 
--- Bảng 8: CVs (Quản lý CÁC TỆP CV của Ứng viên)
+-- Bảng 9: CVs (Quản lý CÁC TỆP CV của Ứng viên)
 CREATE TABLE CVs (
     CVID int IDENTITY(1,1) PRIMARY KEY,
     UserID nvarchar(128) NOT NULL,
@@ -125,7 +136,7 @@ CREATE TABLE CVs (
 );
 GO
 
--- Bảng 9: Jobs (Tin tuyển dụng)
+-- Bảng 10: Jobs (Tin tuyển dụng)
 CREATE TABLE Jobs (
     JobID int IDENTITY(1,1) PRIMARY KEY,
     CompanyID int NOT NULL,
@@ -137,7 +148,8 @@ CREATE TABLE Jobs (
     SalaryMin decimal(18, 2),
     SalaryMax decimal(18, 2),
     Location nvarchar(255),
-    JobType nvarchar(50), 
+    JobType nvarchar(50),
+	LastPushedAt datetime,
     
     -- CẬP NHẬT: Status kiểu TINYINT
     -- 0: Chờ duyệt, 1: Đang tuyển, 2: Đã hết hạn, 3: Đã đóng
@@ -159,7 +171,7 @@ GO
 ----------------------------------------------------------------
 */
 
--- Bảng 10: Applications (Đơn ứng tuyển)
+-- Bảng 11: Applications (Đơn ứng tuyển)
 CREATE TABLE Applications (
     ApplicationID int IDENTITY(1,1) PRIMARY KEY,
     JobID int NOT NULL,
@@ -179,7 +191,7 @@ CREATE TABLE Applications (
 );
 GO
 
--- Bảng 11: ApplicationStatusHistory (Lịch sử Trạng thái Ứng tuyển)
+-- Bảng 12: ApplicationStatusHistory (Lịch sử Trạng thái Ứng tuyển)
 CREATE TABLE ApplicationStatusHistory (
     HistoryID int IDENTITY(1,1) PRIMARY KEY,
     ApplicationID int NOT NULL,
@@ -197,7 +209,7 @@ CREATE TABLE ApplicationStatusHistory (
 );
 GO
 
--- Bảng 12: SavedJobs (Công việc đã lưu)
+-- Bảng 13: SavedJobs (Công việc đã lưu)
 CREATE TABLE SavedJobs (
     UserID nvarchar(128) NOT NULL,
     JobID int NOT NULL,
@@ -209,7 +221,7 @@ CREATE TABLE SavedJobs (
 );
 GO
 
--- Bảng 13: BlockedCompanies (Chặn công ty)
+-- Bảng 14: BlockedCompanies (Chặn công ty)
 CREATE TABLE BlockedCompanies (
     UserID nvarchar(128) NOT NULL,
     CompanyID int NOT NULL,
@@ -221,7 +233,7 @@ CREATE TABLE BlockedCompanies (
 );
 GO
 
--- Bảng 14: Notifications (Thông báo)
+-- Bảng 15: Notifications (Thông báo)
 CREATE TABLE Notifications (
     NotificationID int IDENTITY(1,1) PRIMARY KEY,
     UserID nvarchar(128) NOT NULL,
@@ -239,7 +251,7 @@ GO
 ----------------------------------------------------------------
 */
 
--- Bảng 15: SubscriptionPlans (Các Gói VIP)
+-- Bảng 16: SubscriptionPlans (Các Gói VIP)
 CREATE TABLE SubscriptionPlans (
     PlanID int IDENTITY(1,1) PRIMARY KEY,
     PlanName nvarchar(100) NOT NULL,
@@ -248,12 +260,16 @@ CREATE TABLE SubscriptionPlans (
     DurationInDays int,
     Features ntext, 
 	PlanType nvarchar(50),
+	Limit_JobPostDaily int DEFAULT 0,
+	Limit_PushTopDaily int DEFAULT 0,
+	Limit_PushTopInterval int DEFAULT 1,
+	Limit_CVStorage int DEFAULT 0,
     
     CONSTRAINT FK_SubscriptionPlans_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
 GO
 
--- Bảng 16: UserSubscriptions (Lịch sử Đăng ký VIP)
+-- Bảng 17: UserSubscriptions (Lịch sử Đăng ký VIP)
 CREATE TABLE UserSubscriptions (
     SubscriptionID int IDENTITY(1,1) PRIMARY KEY,
     UserID nvarchar(128) NOT NULL,
@@ -261,9 +277,13 @@ CREATE TABLE UserSubscriptions (
     StartDate datetime NOT NULL,
     EndDate datetime NOT NULL,
     PaymentTransactionID nvarchar(255),
+	Snapshot_JobPostDaily int,
+	Snapshot_PushTopDaily int,
+	Snapshot_PushTopInterval int,
+	Snapshot_CVStorage int,
     
     -- CẬP NHẬT: Status kiểu TINYINT
-    -- 0: Chờ thanh toán, 1: Đang hoạt động, 2: Hết hạn, 3: Đã hủy
+    -- 0: Chờ thanh toán, 1: Đang hoạt động, 2: Hết hạn
     Status TINYINT NOT NULL DEFAULT 0, 
 
 	SnapshotPlanName nvarchar(100),
@@ -276,7 +296,7 @@ CREATE TABLE UserSubscriptions (
 );
 GO
 
--- Bảng 17: CVViews (Log NTD xem CV)
+-- Bảng 18: CVViews (Log NTD xem CV)
 CREATE TABLE CVViews (
     ViewID int IDENTITY(1,1) PRIMARY KEY,
     CandidateID nvarchar(128) NOT NULL,
@@ -288,7 +308,6 @@ CREATE TABLE CVViews (
 );
 GO
 
--- Thêm dữ liệu cho bảng Roles
 INSERT INTO Roles (RoleName) VALUES 
 ('Admin'),        -- 1
 ('SuperAdmin'),   -- 2
@@ -296,5 +315,24 @@ INSERT INTO Roles (RoleName) VALUES
 ('Candidate');    -- 4
 GO
 
-SELECT * FROM Roles ORDER BY RoleID;
+CREATE OR ALTER PROCEDURE DailyExpirationUpdate
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE Jobs
+    SET Status = 2
+    WHERE ExpiresAt <= GETDATE()
+      AND Status IN (0,1);
+
+    UPDATE Jobs
+    SET IsVIP = 0
+    WHERE ExpiresAt <= GETDATE()
+      AND IsVIP = 1;
+
+    UPDATE UserSubscriptions
+    SET Status = 2
+    WHERE EndDate <= GETDATE()
+      AND Status = 1;
+END;
 GO
