@@ -100,6 +100,57 @@ const VipHistory = ({ userId }) => {
       </div>
     );
 
+  const renderFeatures = (features) => {
+    if (!features) return null;
+
+    const items = features
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (!items.length) return null;
+
+    return (
+      <ul className="mt-2 space-y-1 text-xs text-gray-600">
+        {items.map((feature, idx) => (
+          <li key={`${feature}-${idx}`} className="flex items-start">
+            <span className="mr-2">•</span>
+            <span className="leading-snug">{feature}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  const renderLimitBadges = (item) => {
+    const badges = [];
+
+    if (item.Limit_JobPostDaily && item.Limit_JobPostDaily > 0) {
+      badges.push(`Đăng bài/ngày: ${item.Limit_JobPostDaily}`);
+    }
+    if (item.Limit_PushTopDaily && item.Limit_PushTopDaily > 0) {
+      badges.push(`Đẩy top/ngày: ${item.Limit_PushTopDaily}`);
+    }
+    if (item.Limit_CVStorage && item.Limit_CVStorage > 0) {
+      badges.push(`Kho CV: ${item.Limit_CVStorage}`);
+    }
+
+    if (!badges.length) return null;
+
+    return (
+      <div className="flex flex-wrap gap-2 mt-2">
+        {badges.map((text) => (
+          <span
+            key={text}
+            className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-medium"
+          >
+            {text}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="mt-3 overflow-x-auto border border-gray-200 rounded-lg">
       <table className="min-w-full divide-y divide-gray-200">
@@ -110,6 +161,9 @@ const VipHistory = ({ userId }) => {
             </th>
             <th className="px-3 py-2 text-xs font-medium text-left text-gray-500 uppercase">
               Giá
+            </th>
+            <th className="px-3 py-2 text-xs font-medium text-left text-gray-500 uppercase">
+              Quyền lợi snapshot
             </th>
             <th className="px-3 py-2 text-xs font-medium text-left text-gray-500 uppercase">
               Thời Gian
@@ -138,6 +192,15 @@ const VipHistory = ({ userId }) => {
                 <td className="px-3 py-2 text-gray-900">
                   {formatCurrency(item.Price)}
                 </td>
+                <td className="px-3 py-2 text-sm text-gray-800">
+                  <p className="font-medium">Tính năng tại thời điểm mua</p>
+                  {renderFeatures(item.Features) || (
+                    <span className="text-xs italic text-gray-400">
+                      Không có mô tả
+                    </span>
+                  )}
+                  {renderLimitBadges(item)}
+                </td>
                 <td className="px-3 py-2 text-xs text-gray-500">
                   {isOneTime ? (
                     <span>Mua: {formatDate(item.StartDate)}</span>
@@ -164,6 +227,114 @@ const UserDetailModal = ({ user, type, onClose }) => {
 
   const isEmployer = type === "employers";
   const isNoRole = type === "no-role";
+  const snapshotPlanName = user.CurrentVIPPlanName || user.CurrentVIP;
+  const currentVipSnapshot = snapshotPlanName
+    ? {
+        PlanName: snapshotPlanName,
+        Features: user.CurrentVIPFeatures,
+        Price: user.CurrentVIPPrice,
+        PlanType: user.CurrentVIPPlanType,
+        Limit_JobPostDaily: user.CurrentVIPLimitJobPostDaily,
+        Limit_PushTopDaily: user.CurrentVIPLimitPushTopDaily,
+        Limit_CVStorage: user.CurrentVIPLimitCVStorage,
+        StartDate: user.CurrentVIPStartDate,
+        EndDate: user.CurrentVIPEndDate,
+      }
+    : null;
+
+  const formatVipDate = (value) =>
+    value
+      ? new Date(value).toLocaleDateString("vi-VN", { timeZone: "UTC" })
+      : null;
+
+  const renderCurrentVipCard = () => {
+    if (!currentVipSnapshot) {
+      return (
+        <div className="p-4 text-sm text-gray-600 border border-gray-300 border-dashed rounded-lg bg-gray-50">
+          Người dùng chưa đăng ký gói VIP. Đang sử dụng tài khoản thường.
+        </div>
+      );
+    }
+
+    const featureLines = currentVipSnapshot.Features
+      ? currentVipSnapshot.Features.split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+      : [];
+
+    const limitBadges = [];
+    if (currentVipSnapshot.Limit_JobPostDaily > 0) {
+      limitBadges.push(
+        `Đăng bài/ngày: ${currentVipSnapshot.Limit_JobPostDaily}`
+      );
+    }
+    if (currentVipSnapshot.Limit_PushTopDaily > 0) {
+      limitBadges.push(
+        `Đẩy top/ngày: ${currentVipSnapshot.Limit_PushTopDaily}`
+      );
+    }
+    if (currentVipSnapshot.Limit_CVStorage > 0) {
+      limitBadges.push(`Kho CV: ${currentVipSnapshot.Limit_CVStorage}`);
+    }
+
+    const startDate = formatVipDate(currentVipSnapshot.StartDate);
+    const endDate = formatVipDate(currentVipSnapshot.EndDate);
+    const isSubscription = currentVipSnapshot.PlanType === "SUBSCRIPTION";
+
+    return (
+      <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-yellow-600 uppercase">
+              Gói đang sử dụng
+            </p>
+            <h5 className="mt-1 text-xl font-bold text-gray-900">
+              {currentVipSnapshot.PlanName}
+            </h5>
+            <p className="text-sm text-gray-600">
+              {isSubscription ? "Gói định kỳ" : "Dịch vụ 1 lần"}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-500 uppercase">Giá trị</p>
+            <p className="text-2xl font-extrabold text-gray-900">
+              {formatCurrency(currentVipSnapshot.Price || 0)}
+            </p>
+            {startDate && (
+              <p className="mt-1 text-xs text-gray-600">
+                {isSubscription && endDate
+                  ? `${startDate} - ${endDate}`
+                  : `Kích hoạt: ${startDate}`}
+              </p>
+            )}
+          </div>
+        </div>
+        {limitBadges.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {limitBadges.map((text) => (
+              <span
+                key={text}
+                className="px-2 py-1 text-xs font-medium text-yellow-700 border border-yellow-200 rounded-full bg-white/70"
+              >
+                {text}
+              </span>
+            ))}
+          </div>
+        )}
+        {featureLines.length > 0 ? (
+          <ul className="mt-3 space-y-1 text-sm text-gray-700 list-disc list-inside">
+            {featureLines.map((line, idx) => (
+              <li key={`${line}-${idx}`}>{line}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm italic text-gray-500">
+            Gói này không có mô tả tính năng.
+          </p>
+        )}
+      </div>
+    );
+  };
   const avatarUrl = getImageUrl(isEmployer ? user.LogoURL : user.PhotoURL);
 
   let title = "Hồ sơ Ứng viên";
@@ -337,6 +508,7 @@ const UserDetailModal = ({ user, type, onClose }) => {
                     </span>
                   )}
                 </div>
+                {renderCurrentVipCard()}
                 <VipHistory userId={user.FirebaseUserID} />
               </div>
             )}
@@ -433,12 +605,22 @@ const UserManagement = () => {
   };
 
   const performDelete = async (uid) => {
+    const userToDelete = data.find((user) => user.FirebaseUserID === uid);
     try {
       await adminApi.deleteUser(uid);
       toast.success("Đã xóa tài khoản thành công.");
       setData(data.filter((user) => user.FirebaseUserID !== uid));
       if (selectedUser?.FirebaseUserID === uid) setSelectedUser(null);
     } catch (error) {
+      if (userToDelete?.CurrentVIP) {
+        toast.error("Không thể xóa tài khoản VIP.");
+        return;
+      }
+      const serverMsg = error.response?.data?.message;
+      if (serverMsg) {
+        toast.error(serverMsg);
+        return;
+      }
       toast.error("Xóa thất bại.");
     }
   };

@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { DEFAULT_LIMITS } from "../../constants/limitConstants";
 import { formatCurrency } from "../../utils/formatCurrency";
+import ActivePlanCard from "../../components/ActivePlanCard";
 
 const FREE_PLAN = {
   PlanID: "FREE_PLAN",
@@ -16,6 +17,8 @@ const FREE_PLAN = {
   Features: `Đẩy top bài tuyển dụng ${DEFAULT_LIMITS.EMPLOYER.PUSH_TOP_QTY} lần/tuần
   Đăng tối đa ${DEFAULT_LIMITS.EMPLOYER.JOB_POST_DAILY} bài viết/ngày`,
   PlanType: "SUBSCRIPTION",
+  Limit_JobPostDaily: DEFAULT_LIMITS.EMPLOYER.JOB_POST_DAILY,
+  Limit_PushTopDaily: DEFAULT_LIMITS.EMPLOYER.PUSH_TOP_QTY,
 };
 
 const EmployerSubscription = () => {
@@ -27,6 +30,19 @@ const EmployerSubscription = () => {
 
   const isVip = !!appUser?.CurrentVIP;
   const currentVipName = appUser?.CurrentVIP;
+  const currentPlanSnapshot = appUser?.CurrentVIPPlanName
+    ? {
+        PlanName: appUser.CurrentVIPPlanName,
+        Price: appUser.CurrentVIPPrice,
+        PlanType: appUser.CurrentVIPPlanType,
+        Features: appUser.CurrentVIPFeatures,
+        Limit_JobPostDaily: appUser.CurrentVIPLimitJobPostDaily,
+        Limit_PushTopDaily: appUser.CurrentVIPLimitPushTopDaily,
+        Limit_CVStorage: appUser.CurrentVIPLimitCVStorage,
+        StartDate: appUser.CurrentVIPStartDate,
+        EndDate: appUser.CurrentVIPEndDate,
+      }
+    : null;
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -94,6 +110,13 @@ const EmployerSubscription = () => {
           tối ưu hóa quy trình tuyển dụng của bạn.
         </p>
       </div>
+
+      <ActivePlanCard
+        plan={currentPlanSnapshot}
+        isVip={isVip}
+        fallbackPlan={FREE_PLAN}
+        roleLabel="tuyển dụng"
+      />
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {plans.length > 0 ? (

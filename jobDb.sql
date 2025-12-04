@@ -81,6 +81,7 @@ CREATE TABLE CandidateProfiles (
     ProfileSummary ntext,
     IsSearchable bit DEFAULT 0,
 	LastPushedAt datetime,
+	PushTopCount int DEFAULT 0,
     
     CONSTRAINT FK_CandidateProfiles_Users FOREIGN KEY (UserID) REFERENCES Users(FirebaseUserID) ON DELETE CASCADE,
     CONSTRAINT FK_CandidateProfiles_Specializations FOREIGN KEY (SpecializationID) REFERENCES Specializations(SpecializationID)
@@ -102,6 +103,8 @@ CREATE TABLE Companies (
     Country nvarchar(100),
     Latitude decimal(9, 6),
     Longitude decimal(9, 6),
+	PushTopCount int DEFAULT 0,
+	LastPushResetAt datetime,
     
     CONSTRAINT FK_Companies_Users FOREIGN KEY (OwnerUserID) REFERENCES Users(FirebaseUserID) ON DELETE CASCADE
 );
@@ -262,8 +265,9 @@ CREATE TABLE SubscriptionPlans (
 	PlanType nvarchar(50),
 	Limit_JobPostDaily int DEFAULT 0,
 	Limit_PushTopDaily int DEFAULT 0,
-	Limit_PushTopInterval int DEFAULT 1,
 	Limit_CVStorage int DEFAULT 0,
+    Limit_ViewApplicantCount int DEFAULT 0,
+    Limit_RevealCandidatePhone int DEFAULT 0,
     
     CONSTRAINT FK_SubscriptionPlans_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
@@ -279,8 +283,9 @@ CREATE TABLE UserSubscriptions (
     PaymentTransactionID nvarchar(255),
 	Snapshot_JobPostDaily int,
 	Snapshot_PushTopDaily int,
-	Snapshot_PushTopInterval int,
 	Snapshot_CVStorage int,
+    Snapshot_ViewApplicantCount int,
+    Snapshot_RevealCandidatePhone int,
     
     -- CẬP NHẬT: Status kiểu TINYINT
     -- 0: Chờ thanh toán, 1: Đang hoạt động, 2: Hết hạn
@@ -305,6 +310,21 @@ CREATE TABLE CVViews (
     
     CONSTRAINT FK_CVViews_Candidate FOREIGN KEY (CandidateID) REFERENCES Users(FirebaseUserID),
     CONSTRAINT FK_CVViews_Employer FOREIGN KEY (EmployerID) REFERENCES Users(FirebaseUserID)
+);
+GO
+
+-- Bảng 19: VipOneTimeUsage (Lưu lượt dùng tính năng VIP một lần)
+CREATE TABLE VipOneTimeUsage (
+    UsageID int IDENTITY(1,1) PRIMARY KEY,
+    UserID nvarchar(128) NOT NULL,
+    FeatureType nvarchar(100) NOT NULL,
+    ReferenceID nvarchar(128),
+    ConsumedFromSubscriptionID int,
+    UsedAt datetime DEFAULT GETDATE(),
+
+    CONSTRAINT FK_VipOneTimeUsage_Users FOREIGN KEY (UserID) REFERENCES Users(FirebaseUserID) ON DELETE CASCADE,
+    CONSTRAINT FK_VipOneTimeUsage_Subscriptions FOREIGN KEY (ConsumedFromSubscriptionID) REFERENCES UserSubscriptions(SubscriptionID) ON DELETE SET NULL,
+    CONSTRAINT UQ_VipOneTimeUsage UNIQUE (UserID, FeatureType, ReferenceID)
 );
 GO
 

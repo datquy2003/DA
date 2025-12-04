@@ -53,8 +53,9 @@ router.post("/", checkAuth, checkAdminRole, async (req, res) => {
     PlanType,
     Limit_JobPostDaily,
     Limit_PushTopDaily,
-    Limit_PushTopInterval,
     Limit_CVStorage,
+    Limit_ViewApplicantCount,
+    Limit_RevealCandidatePhone,
   } = req.body;
 
   if (!PlanName || !RoleID || !PlanType) {
@@ -79,15 +80,26 @@ router.post("/", checkAuth, checkAdminRole, async (req, res) => {
       .input("PlanType", sql.NVarChar, PlanType)
       .input("Limit_JobPostDaily", sql.Int, Limit_JobPostDaily || 0)
       .input("Limit_PushTopDaily", sql.Int, Limit_PushTopDaily || 0)
-      .input("Limit_PushTopInterval", sql.Int, Limit_PushTopInterval || 1)
-      .input("Limit_CVStorage", sql.Int, Limit_CVStorage || 0).query(`
+      .input("Limit_CVStorage", sql.Int, Limit_CVStorage || 0)
+      .input(
+        "Limit_ViewApplicantCount",
+        sql.Int,
+        Limit_ViewApplicantCount || 0
+      )
+      .input(
+        "Limit_RevealCandidatePhone",
+        sql.Int,
+        Limit_RevealCandidatePhone || 0
+      ).query(`
         INSERT INTO SubscriptionPlans (
           RoleID, PlanName, Price, DurationInDays, Features, PlanType,
-          Limit_JobPostDaily, Limit_PushTopDaily, Limit_PushTopInterval, Limit_CVStorage
+          Limit_JobPostDaily, Limit_PushTopDaily, Limit_CVStorage,
+          Limit_ViewApplicantCount, Limit_RevealCandidatePhone
         )
         VALUES (
           @RoleID, @PlanName, @Price, @DurationInDays, @Features, @PlanType,
-          @Limit_JobPostDaily, @Limit_PushTopDaily, @Limit_PushTopInterval, @Limit_CVStorage
+          @Limit_JobPostDaily, @Limit_PushTopDaily, @Limit_CVStorage,
+          @Limit_ViewApplicantCount, @Limit_RevealCandidatePhone
         )
       `);
     res.status(201).json({ message: "Thêm gói thành công." });
@@ -107,8 +119,9 @@ router.put("/:id", checkAuth, checkAdminRole, async (req, res) => {
     PlanType,
     Limit_JobPostDaily,
     Limit_PushTopDaily,
-    Limit_PushTopInterval,
     Limit_CVStorage,
+    Limit_ViewApplicantCount,
+    Limit_RevealCandidatePhone,
   } = req.body;
 
   try {
@@ -129,8 +142,17 @@ router.put("/:id", checkAuth, checkAdminRole, async (req, res) => {
       .input("PlanType", sql.NVarChar, PlanType)
       .input("Limit_JobPostDaily", sql.Int, Limit_JobPostDaily || 0)
       .input("Limit_PushTopDaily", sql.Int, Limit_PushTopDaily || 0)
-      .input("Limit_PushTopInterval", sql.Int, Limit_PushTopInterval || 1)
-      .input("Limit_CVStorage", sql.Int, Limit_CVStorage || 0).query(`
+      .input("Limit_CVStorage", sql.Int, Limit_CVStorage || 0)
+      .input(
+        "Limit_ViewApplicantCount",
+        sql.Int,
+        Limit_ViewApplicantCount || 0
+      )
+      .input(
+        "Limit_RevealCandidatePhone",
+        sql.Int,
+        Limit_RevealCandidatePhone || 0
+      ).query(`
         UPDATE SubscriptionPlans 
         SET PlanName = @PlanName, 
             Price = @Price, 
@@ -139,8 +161,9 @@ router.put("/:id", checkAuth, checkAdminRole, async (req, res) => {
             PlanType = @PlanType,
             Limit_JobPostDaily = @Limit_JobPostDaily,
             Limit_PushTopDaily = @Limit_PushTopDaily,
-            Limit_PushTopInterval = @Limit_PushTopInterval,
-            Limit_CVStorage = @Limit_CVStorage
+            Limit_CVStorage = @Limit_CVStorage,
+            Limit_ViewApplicantCount = @Limit_ViewApplicantCount,
+            Limit_RevealCandidatePhone = @Limit_RevealCandidatePhone
         WHERE PlanID = @PlanID
       `);
     res.status(200).json({ message: "Cập nhật thành công." });

@@ -132,20 +132,27 @@ router.post("/verify-payment", checkAuth, async (req, res) => {
         .input("SnapshotPlanType", sql.NVarChar, plan.PlanType)
         .input("Snapshot_JobPostDaily", sql.Int, plan.Limit_JobPostDaily || 0)
         .input("Snapshot_PushTopDaily", sql.Int, plan.Limit_PushTopDaily || 0)
+        .input("Snapshot_CVStorage", sql.Int, plan.Limit_CVStorage || 0)
         .input(
-          "Snapshot_PushTopInterval",
+          "Snapshot_ViewApplicantCount",
           sql.Int,
-          plan.Limit_PushTopInterval || 1
+          plan.Limit_ViewApplicantCount || 0
         )
-        .input("Snapshot_CVStorage", sql.Int, plan.Limit_CVStorage || 0).query(`
+        .input(
+          "Snapshot_RevealCandidatePhone",
+          sql.Int,
+          plan.Limit_RevealCandidatePhone || 0
+        ).query(`
           INSERT INTO UserSubscriptions 
           (UserID, PlanID, StartDate, EndDate, PaymentTransactionID, Status, 
            SnapshotPlanName, SnapshotFeatures, SnapshotPrice, SnapshotPlanType,
-           Snapshot_JobPostDaily, Snapshot_PushTopDaily, Snapshot_PushTopInterval, Snapshot_CVStorage)
+           Snapshot_JobPostDaily, Snapshot_PushTopDaily, Snapshot_CVStorage,
+           Snapshot_ViewApplicantCount, Snapshot_RevealCandidatePhone)
           VALUES 
           (@UserID, @PlanID, @StartDate, @EndDate, @PaymentTransactionID, @Status,
            @SnapshotPlanName, @SnapshotFeatures, @SnapshotPrice, @SnapshotPlanType,
-           @Snapshot_JobPostDaily, @Snapshot_PushTopDaily, @Snapshot_PushTopInterval, @Snapshot_CVStorage)
+           @Snapshot_JobPostDaily, @Snapshot_PushTopDaily, @Snapshot_CVStorage,
+           @Snapshot_ViewApplicantCount, @Snapshot_RevealCandidatePhone)
         `);
 
       await transaction.commit();

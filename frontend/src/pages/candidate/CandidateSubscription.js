@@ -7,6 +7,7 @@ import { paymentApi } from "../../api/paymentApi";
 import { formatCurrency } from "../../utils/formatCurrency";
 import { DEFAULT_LIMITS } from "../../constants/limitConstants";
 import { useAuth } from "../../context/AuthContext";
+import ActivePlanCard from "../../components/ActivePlanCard";
 
 const FREE_PLAN = {
   PlanID: "FREE_PLAN",
@@ -16,6 +17,8 @@ const FREE_PLAN = {
   Features: `Đẩy top hồ sơ ${DEFAULT_LIMITS.CANDIDATE.PUSH_TOP_QTY} lần/tuần
 Lưu trữ tối đa ${DEFAULT_LIMITS.CANDIDATE.CV_STORAGE} CV`,
   PlanType: "SUBSCRIPTION",
+  Limit_CVStorage: DEFAULT_LIMITS.CANDIDATE.CV_STORAGE,
+  Limit_PushTopDaily: DEFAULT_LIMITS.CANDIDATE.PUSH_TOP_QTY,
 };
 
 const CandidateSubscription = () => {
@@ -27,6 +30,19 @@ const CandidateSubscription = () => {
 
   const isVip = !!appUser?.CurrentVIP;
   const currentVipName = appUser?.CurrentVIP || null;
+  const currentPlanSnapshot = appUser?.CurrentVIPPlanName
+    ? {
+        PlanName: appUser.CurrentVIPPlanName,
+        Price: appUser.CurrentVIPPrice,
+        PlanType: appUser.CurrentVIPPlanType,
+        Features: appUser.CurrentVIPFeatures,
+        Limit_JobPostDaily: appUser.CurrentVIPLimitJobPostDaily,
+        Limit_PushTopDaily: appUser.CurrentVIPLimitPushTopDaily,
+        Limit_CVStorage: appUser.CurrentVIPLimitCVStorage,
+        StartDate: appUser.CurrentVIPStartDate,
+        EndDate: appUser.CurrentVIPEndDate,
+      }
+    : null;
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -98,6 +114,13 @@ const CandidateSubscription = () => {
           để nổi bật trước nhà tuyển dụng.
         </p>
       </div>
+
+      <ActivePlanCard
+        plan={currentPlanSnapshot}
+        isVip={isVip}
+        fallbackPlan={FREE_PLAN}
+        roleLabel="ứng viên"
+      />
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
         {plans.length > 0 ? (

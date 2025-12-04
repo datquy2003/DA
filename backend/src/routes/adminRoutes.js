@@ -78,10 +78,25 @@ router.get(
       const result = await pool.request().input("UserID", sql.NVarChar, uid)
         .query(`
         SELECT 
-          us.SubscriptionID, us.StartDate, us.EndDate, us.Status, us.PaymentTransactionID,
-          sp.PlanName, sp.Price, sp.PlanType, sp.DurationInDays
+          us.SubscriptionID,
+          us.StartDate,
+          us.EndDate,
+          us.Status,
+          us.PaymentTransactionID,
+          ISNULL(us.SnapshotPlanName, sp.PlanName) AS PlanName,
+          ISNULL(us.SnapshotPrice, sp.Price) AS Price,
+          ISNULL(us.SnapshotPlanType, sp.PlanType) AS PlanType,
+          CASE 
+            WHEN ISNULL(us.SnapshotPlanType, sp.PlanType) = 'SUBSCRIPTION' 
+              THEN DATEDIFF(DAY, us.StartDate, us.EndDate)
+            ELSE NULL
+          END AS DurationInDays,
+          ISNULL(us.SnapshotFeatures, sp.Features) AS Features,
+          ISNULL(us.Snapshot_JobPostDaily, sp.Limit_JobPostDaily) AS Limit_JobPostDaily,
+          ISNULL(us.Snapshot_PushTopDaily, sp.Limit_PushTopDaily) AS Limit_PushTopDaily,
+          ISNULL(us.Snapshot_CVStorage, sp.Limit_CVStorage) AS Limit_CVStorage
         FROM UserSubscriptions us
-        JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID
+        LEFT JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID
         WHERE us.UserID = @UserID
         ORDER BY us.StartDate DESC
       `);
@@ -93,22 +108,61 @@ router.get(
   }
 );
 
+const buildVipApply = () => `
+  OUTER APPLY (
+    SELECT TOP 1
+      ISNULL(us.SnapshotPlanName, sp.PlanName) AS PlanName,
+      ISNULL(us.SnapshotFeatures, sp.Features) AS Features,
+      ISNULL(us.SnapshotPrice, sp.Price) AS Price,
+      ISNULL(us.SnapshotPlanType, sp.PlanType) AS PlanType,
+      ISNULL(us.Snapshot_JobPostDaily, sp.Limit_JobPostDaily) AS LimitJobPostDaily,
+      ISNULL(us.Snapshot_PushTopDaily, sp.Limit_PushTopDaily) AS LimitPushTopDaily,
+      ISNULL(us.Snapshot_CVStorage, sp.Limit_CVStorage) AS LimitCVStorage,
+      ISNULL(us.Snapshot_ViewApplicantCount, sp.Limit_ViewApplicantCount) AS ViewApplicantQuota,
+      ISNULL(us.Snapshot_RevealCandidatePhone, sp.Limit_RevealCandidatePhone) AS RevealPhoneQuota,
+      us.StartDate,
+      us.EndDate
+    FROM UserSubscriptions us
+    LEFT JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID
+    WHERE us.UserID = u.FirebaseUserID 
+      AND us.Status = 1 
+      AND us.EndDate > GETDATE()
+    ORDER BY us.EndDate DESC
+  ) vip
+`;
+
 router.get("/users/candidates", checkAuth, checkAdminRole, async (req, res) => {
   try {
     const pool = await sql.connect(sqlConfig);
     const result = await pool.request().query(`
       SELECT 
-        u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt, u.LastLoginAt,
-        cp.FullName, cp.PhoneNumber, cp.Address, cp.ProfileSummary, cp.Birthday,
-        (
-          SELECT TOP 1 sp.PlanName 
-          FROM UserSubscriptions us 
-          JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID 
-          WHERE us.UserID = u.FirebaseUserID AND us.Status = 1 AND us.EndDate > GETDATE()
-          ORDER BY us.EndDate DESC
-        ) AS CurrentVIP
+        u.FirebaseUserID,
+        u.Email,
+        u.DisplayName,
+        u.PhotoURL,
+        u.IsVerified,
+        u.IsBanned,
+        u.CreatedAt,
+        u.LastLoginAt,
+        cp.FullName,
+        cp.PhoneNumber,
+        cp.Address,
+        cp.ProfileSummary,
+        cp.Birthday,
+        vip.PlanName AS CurrentVIP,
+        vip.Features AS CurrentVIPFeatures,
+        vip.Price AS CurrentVIPPrice,
+        vip.PlanType AS CurrentVIPPlanType,
+        vip.LimitJobPostDaily AS CurrentVIPLimitJobPostDaily,
+        vip.LimitPushTopDaily AS CurrentVIPLimitPushTopDaily,
+        vip.LimitCVStorage AS CurrentVIPLimitCVStorage,
+        vip.ViewApplicantQuota AS CurrentVIPViewApplicantCount,
+        vip.RevealPhoneQuota AS CurrentVIPRevealPhoneQuota,
+        vip.StartDate AS CurrentVIPStartDate,
+        vip.EndDate AS CurrentVIPEndDate
       FROM Users u
       LEFT JOIN CandidateProfiles cp ON u.FirebaseUserID = cp.UserID
+      ${buildVipApply()}
       WHERE u.RoleID = 4
       ORDER BY u.CreatedAt DESC
     `);
@@ -124,17 +178,37 @@ router.get("/users/employers", checkAuth, checkAdminRole, async (req, res) => {
     const pool = await sql.connect(sqlConfig);
     const result = await pool.request().query(`
       SELECT 
-        u.FirebaseUserID, u.Email, u.DisplayName, u.PhotoURL, u.IsVerified, u.IsBanned, u.CreatedAt, u.LastLoginAt,
-        c.CompanyName, c.CompanyEmail, c.CompanyPhone, c.WebsiteURL, c.LogoURL, c.Address as CompanyAddress, c.City, c.Country, c.CompanyDescription,
-        (
-          SELECT TOP 1 sp.PlanName 
-          FROM UserSubscriptions us 
-          JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID 
-          WHERE us.UserID = u.FirebaseUserID AND us.Status = 1 AND us.EndDate > GETDATE()
-          ORDER BY us.EndDate DESC
-        ) AS CurrentVIP
+        u.FirebaseUserID,
+        u.Email,
+        u.DisplayName,
+        u.PhotoURL,
+        u.IsVerified,
+        u.IsBanned,
+        u.CreatedAt,
+        u.LastLoginAt,
+        c.CompanyName,
+        c.CompanyEmail,
+        c.CompanyPhone,
+        c.WebsiteURL,
+        c.LogoURL,
+        c.Address as CompanyAddress,
+        c.City,
+        c.Country,
+        c.CompanyDescription,
+        vip.PlanName AS CurrentVIP,
+        vip.Features AS CurrentVIPFeatures,
+        vip.Price AS CurrentVIPPrice,
+        vip.PlanType AS CurrentVIPPlanType,
+        vip.LimitJobPostDaily AS CurrentVIPLimitJobPostDaily,
+        vip.LimitPushTopDaily AS CurrentVIPLimitPushTopDaily,
+        vip.LimitCVStorage AS CurrentVIPLimitCVStorage,
+        vip.ViewApplicantQuota AS CurrentVIPViewApplicantCount,
+        vip.RevealPhoneQuota AS CurrentVIPRevealPhoneQuota,
+        vip.StartDate AS CurrentVIPStartDate,
+        vip.EndDate AS CurrentVIPEndDate
       FROM Users u
       LEFT JOIN Companies c ON u.FirebaseUserID = c.OwnerUserID
+      ${buildVipApply()}
       WHERE u.RoleID = 3
       ORDER BY u.CreatedAt DESC
     `);

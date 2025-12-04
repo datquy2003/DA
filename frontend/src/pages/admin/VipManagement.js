@@ -11,13 +11,17 @@ import {
   FiUser,
   FiClock,
   FiZap,
+  FiCheck,
+  FiArrowRight,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/modals/ConfirmationModal";
 import { formatCurrency } from "../../utils/formatCurrency";
+import { FEATURE_KEYS, ONE_TIME_FEATURES } from "../../constants/vipFeatures";
 
 const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
   const [mode, setMode] = useState("SUBSCRIPTION");
+  const [selectedFeatureKey, setSelectedFeatureKey] = useState(null);
 
   const [formData, setFormData] = useState({
     PlanName: "",
@@ -26,8 +30,9 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
     Features: "",
     Limit_JobPostDaily: "",
     Limit_PushTopDaily: "",
-    Limit_PushTopInterval: "1",
     Limit_CVStorage: "",
+    Limit_ViewApplicantCount: "",
+    Limit_RevealCandidatePhone: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -45,9 +50,22 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
         Features: pkgToEdit.Features || "",
         Limit_JobPostDaily: pkgToEdit.Limit_JobPostDaily || "",
         Limit_PushTopDaily: pkgToEdit.Limit_PushTopDaily || "",
-        Limit_PushTopInterval: pkgToEdit.Limit_PushTopInterval || "1",
         Limit_CVStorage: pkgToEdit.Limit_CVStorage || "",
+        Limit_ViewApplicantCount: pkgToEdit.Limit_ViewApplicantCount || "",
+        Limit_RevealCandidatePhone: pkgToEdit.Limit_RevealCandidatePhone || "",
       });
+
+      if (!isSub) {
+        if (pkgToEdit.Limit_ViewApplicantCount > 0) {
+          setSelectedFeatureKey(FEATURE_KEYS.CANDIDATE_COMPETITOR_INSIGHT);
+        } else if (pkgToEdit.Limit_RevealCandidatePhone > 0) {
+          setSelectedFeatureKey(FEATURE_KEYS.EMPLOYER_REVEAL_PHONE);
+        } else {
+          setSelectedFeatureKey(null);
+        }
+      } else {
+        setSelectedFeatureKey(null);
+      }
     } else {
       setMode("SUBSCRIPTION");
       setFormData({
@@ -57,11 +75,24 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
         Features: "",
         Limit_JobPostDaily: "",
         Limit_PushTopDaily: "",
-        Limit_PushTopInterval: "1",
         Limit_CVStorage: "",
+        Limit_ViewApplicantCount: "",
+        Limit_RevealCandidatePhone: "",
       });
+      setSelectedFeatureKey(null);
     }
   }, [pkgToEdit]);
+
+  useEffect(() => {
+    if (mode !== "ONE_TIME") {
+      setSelectedFeatureKey(null);
+    }
+  }, [mode]);
+
+  const isEmployer = roleId === 3;
+  const availableOneTimeFeatures = ONE_TIME_FEATURES[roleId] || [];
+  const isEditing = Boolean(pkgToEdit);
+  const isEditingOneTime = isEditing && mode === "ONE_TIME";
 
   const formatNumber = (value) => {
     if (!value) return "";
@@ -70,19 +101,50 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
   };
 
   const handleChange = (e) => {
+    if (isEditingOneTime && e.target.name !== "Price") {
+      return;
+    }
     let { name, value } = e.target;
     if (name === "Price") value = formatNumber(value);
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleSelectOneTimeFeature = (feature) => {
+    if (isEditingOneTime) return;
+    setSelectedFeatureKey(feature.key);
+    setFormData((prev) => ({
+      ...prev,
+      PlanName: prev.PlanName || feature.suggestedName,
+      Features: prev.Features || feature.suggestedFeatures,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (mode === "ONE_TIME" && !selectedFeatureKey) {
+      toast.error("Vui lòng chọn tính năng mua 1 lần cho gói dịch vụ.");
+      return;
+    }
+
     setLoading(true);
     try {
       const cleanedFeatures = formData.Features.split("\n")
         .map((line) => line.trim())
         .filter((line) => line !== "")
         .join("\n");
+
+      const limitView =
+        mode === "ONE_TIME"
+          ? selectedFeatureKey === FEATURE_KEYS.CANDIDATE_COMPETITOR_INSIGHT
+            ? 1
+            : 0
+          : parseInt(formData.Limit_ViewApplicantCount) || 0;
+      const limitReveal =
+        mode === "ONE_TIME"
+          ? selectedFeatureKey === FEATURE_KEYS.EMPLOYER_REVEAL_PHONE
+            ? 1
+            : 0
+          : parseInt(formData.Limit_RevealCandidatePhone) || 0;
 
       const payload = {
         ...formData,
@@ -94,8 +156,9 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
         Features: cleanedFeatures,
         Limit_JobPostDaily: parseInt(formData.Limit_JobPostDaily) || 0,
         Limit_PushTopDaily: parseInt(formData.Limit_PushTopDaily) || 0,
-        Limit_PushTopInterval: parseInt(formData.Limit_PushTopInterval) || 1,
         Limit_CVStorage: parseInt(formData.Limit_CVStorage) || 0,
+        Limit_ViewApplicantCount: limitView,
+        Limit_RevealCandidatePhone: limitReveal,
       };
 
       if (pkgToEdit) {
@@ -114,8 +177,6 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
     }
   };
 
-  const isEmployer = roleId === 3;
-
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm !mt-0">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg animate-fadeIn flex flex-col max-h-[90vh]">
@@ -133,23 +194,29 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
             <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
               <button
                 type="button"
-                onClick={() => setMode("SUBSCRIPTION")}
+                onClick={() => {
+                  if (!isEditing) setMode("SUBSCRIPTION");
+                }}
                 className={`py-2 text-sm font-medium rounded-md transition-all ${
                   mode === "SUBSCRIPTION"
                     ? "bg-white shadow text-blue-600"
                     : "text-gray-500"
-                }`}
+                } ${isEditing ? "opacity-60 cursor-not-allowed" : ""}`}
+                disabled={isEditing}
               >
                 <FiClock className="inline mr-1" /> Gói Định Kỳ
               </button>
               <button
                 type="button"
-                onClick={() => setMode("ONE_TIME")}
+                onClick={() => {
+                  if (!isEditing) setMode("ONE_TIME");
+                }}
                 className={`py-2 text-sm font-medium rounded-md transition-all ${
                   mode === "ONE_TIME"
                     ? "bg-white shadow text-purple-600"
                     : "text-gray-500"
-                }`}
+                } ${isEditing ? "opacity-60 cursor-not-allowed" : ""}`}
+                disabled={isEditing}
               >
                 <FiZap className="inline mr-1" /> Mua 1 Lần
               </button>
@@ -158,13 +225,16 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Tên gói
+                  Tên gói / Dịch vụ
                 </label>
                 <input
                   type="text"
                   name="PlanName"
                   required
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                    isEditingOneTime ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                  disabled={isEditingOneTime}
                   value={formData.PlanName}
                   onChange={handleChange}
                 />
@@ -199,45 +269,108 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
               )}
             </div>
 
-            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-              <h4 className="pb-2 mb-3 text-sm font-bold text-gray-800 border-b">
-                Cấu hình giới hạn
-              </h4>
-
-              {isEmployer && (
-                <div className="mb-3">
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    Số bài đăng / ngày
-                  </label>
-                  <input
-                    type="number"
-                    name="Limit_JobPostDaily"
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-blue-500"
-                    value={formData.Limit_JobPostDaily}
-                    onChange={handleChange}
-                  />
+            {mode === "ONE_TIME" && (
+              <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold text-purple-800">
+                    Chọn tính năng mua 1 lần
+                  </h4>
+                  <span className="text-[11px] uppercase font-semibold text-purple-600">
+                    Áp dụng theo từng API
+                  </span>
                 </div>
-              )}
+                {availableOneTimeFeatures.length > 0 ? (
+                  <div className="space-y-3">
+                    {availableOneTimeFeatures.map((feature) => {
+                      const isSelected = selectedFeatureKey === feature.key;
+                      return (
+                        <button
+                          type="button"
+                          key={feature.key}
+                          onClick={() => handleSelectOneTimeFeature(feature)}
+                          className={`w-full text-left rounded-xl border p-4 transition group ${
+                            isSelected
+                              ? "border-purple-500 bg-white shadow-md"
+                              : "border-transparent bg-white/70 hover:border-purple-300"
+                          } ${
+                            isEditingOneTime
+                              ? "opacity-60 cursor-not-allowed"
+                              : ""
+                          }`}
+                          disabled={isEditingOneTime}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {feature.title}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-600">
+                                {feature.description}
+                              </p>
+                            </div>
+                            {isSelected && (
+                              <FiCheck className="mt-1 text-purple-600" />
+                            )}
+                          </div>
+                          <div className="flex items-center mt-3 text-xs font-semibold text-purple-600">
+                            <FiArrowRight className="mr-1" />
+                            API: {feature.apiPath}
+                          </div>
+                        </button>
+                      );
+                    })}
+                    <p className="text-[11px] text-gray-600">
+                      * Các gói một lần sẽ tự động gán đúng quyền hạn để liên
+                      kết với API tương ứng.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    Role này hiện chưa có tính năng mua một lần.
+                  </p>
+                )}
+              </div>
+            )}
 
-              {!isEmployer && (
-                <div className="mb-3">
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    Lưu trữ tối đa CV
-                  </label>
-                  <input
-                    type="number"
-                    name="Limit_CVStorage"
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-blue-500"
-                    value={formData.Limit_CVStorage}
-                    onChange={handleChange}
-                  />
-                </div>
-              )}
+            {mode === "SUBSCRIPTION" && (
+              <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                <h4 className="pb-2 mb-3 text-sm font-bold text-gray-800 border-b">
+                  Cấu hình giới hạn
+                </h4>
 
-              <div className="grid grid-cols-2 gap-3">
+                {isEmployer && (
+                  <div className="mb-3">
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      Số bài đăng / ngày
+                    </label>
+                    <input
+                      type="number"
+                      name="Limit_JobPostDaily"
+                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-blue-500"
+                      value={formData.Limit_JobPostDaily}
+                      onChange={handleChange}
+                    />
+                  </div>
+                )}
+
+                {!isEmployer && (
+                  <div className="mb-3">
+                    <label className="block mb-1 text-xs font-medium text-gray-600">
+                      Lưu trữ tối đa CV
+                    </label>
+                    <input
+                      type="number"
+                      name="Limit_CVStorage"
+                      className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-blue-500"
+                      value={formData.Limit_CVStorage}
+                      onChange={handleChange}
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label className="block mb-1 text-xs font-medium text-gray-600">
-                    Số lần Đẩy Top
+                    Số lần Đẩy Top / ngày
                   </label>
                   <input
                     type="number"
@@ -247,20 +380,8 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
                     onChange={handleChange}
                   />
                 </div>
-                <div>
-                  <label className="block mb-1 text-xs font-medium text-gray-600">
-                    Trong vòng (ngày)
-                  </label>
-                  <input
-                    type="number"
-                    name="Limit_PushTopInterval"
-                    className="w-full px-3 py-2 text-sm border rounded-lg focus:ring-blue-500"
-                    value={formData.Limit_PushTopInterval}
-                    onChange={handleChange}
-                  />
-                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700">
@@ -269,7 +390,10 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
               <textarea
                 name="Features"
                 rows="3"
-                className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
+                  isEditingOneTime ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+                disabled={isEditingOneTime}
                 value={formData.Features}
                 onChange={handleChange}
               ></textarea>
@@ -343,7 +467,12 @@ const VipManagement = () => {
           toast.success("Đã xóa.");
           fetchPackages();
         } catch (error) {
-          toast.error("Xóa thất bại.");
+          const serverMsg = error.response?.data?.message;
+          if (serverMsg) {
+            toast.error(serverMsg);
+            return;
+          }
+          toast.error("Không thể xóa vì gói đang được sử dụng.");
         }
       },
     });
@@ -412,7 +541,7 @@ const VipManagement = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">
-                    Tên Gói
+                    Tên Gói / Dịch vụ
                   </th>
                   <th className="px-6 py-3 text-xs font-medium text-left text-gray-500 uppercase">
                     Loại
@@ -448,7 +577,7 @@ const VipManagement = () => {
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            <FiZap className="mr-1" /> 1 Lần
+                            <FiZap className="mr-1" /> Một lần
                           </span>
                         )}
                       </td>

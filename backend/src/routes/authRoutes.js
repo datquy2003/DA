@@ -6,6 +6,49 @@ import admin from "../config/firebaseAdmin.js";
 
 const router = express.Router();
 
+const vipSnapshotApply = `
+  OUTER APPLY (
+    SELECT TOP 1
+      ISNULL(us.SnapshotPlanName, sp.PlanName) AS PlanName,
+      ISNULL(us.SnapshotFeatures, sp.Features) AS Features,
+      ISNULL(us.SnapshotPrice, sp.Price) AS Price,
+      ISNULL(us.SnapshotPlanType, sp.PlanType) AS PlanType,
+      ISNULL(us.Snapshot_JobPostDaily, sp.Limit_JobPostDaily) AS LimitJobPostDaily,
+      ISNULL(us.Snapshot_PushTopDaily, sp.Limit_PushTopDaily) AS LimitPushTopDaily,
+      ISNULL(us.Snapshot_CVStorage, sp.Limit_CVStorage) AS LimitCVStorage,
+      ISNULL(us.Snapshot_ViewApplicantCount, sp.Limit_ViewApplicantCount) AS ViewApplicantQuota,
+      ISNULL(us.Snapshot_RevealCandidatePhone, sp.Limit_RevealCandidatePhone) AS RevealPhoneQuota,
+      us.StartDate,
+      us.EndDate
+    FROM UserSubscriptions us
+    LEFT JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID
+    WHERE us.UserID = u.FirebaseUserID 
+      AND us.Status = 1 
+      AND us.EndDate > GETDATE()
+    ORDER BY us.EndDate DESC
+  ) vip
+`;
+
+const buildUserSelectQuery = () => `
+  SELECT 
+    u.*,
+    vip.PlanName AS CurrentVIP,
+    vip.PlanName AS CurrentVIPPlanName,
+    vip.Features AS CurrentVIPFeatures,
+    vip.Price AS CurrentVIPPrice,
+    vip.PlanType AS CurrentVIPPlanType,
+    vip.LimitJobPostDaily AS CurrentVIPLimitJobPostDaily,
+    vip.LimitPushTopDaily AS CurrentVIPLimitPushTopDaily,
+    vip.LimitCVStorage AS CurrentVIPLimitCVStorage,
+    vip.ViewApplicantQuota AS CurrentVIPViewApplicantCount,
+    vip.RevealPhoneQuota AS CurrentVIPRevealPhoneQuota,
+    vip.StartDate AS CurrentVIPStartDate,
+    vip.EndDate AS CurrentVIPEndDate
+  FROM Users u
+  ${vipSnapshotApply}
+  WHERE u.FirebaseUserID = @FirebaseUserID
+`;
+
 const getUidsForProvider = (firebaseIdentities, providerId) => {
   return firebaseIdentities[providerId] || [];
 };
@@ -43,20 +86,8 @@ router.get("/me", checkAuth, async (req, res) => {
     try {
       let userResult = await transaction
         .request()
-        .input("FirebaseUserID", sql.NVarChar, firebaseUid).query(`
-          SELECT *,
-            (
-              SELECT TOP 1 ISNULL(us.SnapshotPlanName, sp.PlanName)
-              FROM UserSubscriptions us 
-              LEFT JOIN SubscriptionPlans sp ON us.PlanID = sp.PlanID 
-              WHERE us.UserID = Users.FirebaseUserID 
-                AND us.Status = 1 
-                AND us.EndDate > GETDATE()
-              ORDER BY us.EndDate DESC
-            ) AS CurrentVIP
-          FROM Users 
-          WHERE FirebaseUserID = @FirebaseUserID
-        `);
+        .input("FirebaseUserID", sql.NVarChar, firebaseUid)
+        .query(buildUserSelectQuery());
 
       if (userResult.recordset.length === 0) {
         await transaction
@@ -77,7 +108,7 @@ router.get("/me", checkAuth, async (req, res) => {
         userResult = await transaction
           .request()
           .input("FirebaseUserID", sql.NVarChar, firebaseUid)
-          .query("SELECT * FROM Users WHERE FirebaseUserID = @FirebaseUserID");
+          .query(buildUserSelectQuery());
       } else {
         await transaction
           .request()
