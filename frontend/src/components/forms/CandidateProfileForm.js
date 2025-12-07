@@ -3,6 +3,7 @@ import { profileApi } from "../../api/profileApi";
 import { categoryApi } from "../../api/categoryApi";
 import toast from "react-hot-toast";
 import { FiChevronDown, FiX, FiLoader } from "react-icons/fi";
+import LocationSelector from "./LocationSelector";
 
 const CandidateProfileForm = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,8 @@ const CandidateProfileForm = () => {
     PhoneNumber: "",
     Birthday: "",
     Address: "",
+    City: "",
+    Country: "",
     ProfileSummary: "",
     IsSearchable: false,
   });
@@ -43,6 +46,8 @@ const CandidateProfileForm = () => {
             PhoneNumber: data.PhoneNumber || "",
             Birthday: data.Birthday ? data.Birthday.split("T")[0] : "",
             Address: data.Address || "",
+            City: data.City || "",
+            Country: data.Country || "",
             ProfileSummary: data.ProfileSummary || "",
             IsSearchable: data.IsSearchable || false,
           });
@@ -100,6 +105,10 @@ const CandidateProfileForm = () => {
 
   const removeSpec = (id) => {
     setSelectedSpecs((prev) => prev.filter((s) => s.SpecializationID !== id));
+  };
+
+  const handleLocationChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleChange = (e) => {
@@ -199,6 +208,12 @@ const CandidateProfileForm = () => {
             />
           </div>
         </div>
+
+        <LocationSelector
+          selectedCountry={formData.Country}
+          selectedCity={formData.City}
+          onChange={handleLocationChange}
+        />
 
         <div className="relative" ref={dropdownRef}>
           <label className="block mb-2 text-sm font-medium text-gray-700">

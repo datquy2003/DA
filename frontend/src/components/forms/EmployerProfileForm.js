@@ -3,6 +3,7 @@ import { profileApi } from "../../api/profileApi";
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../utils/urlHelper";
 import MapDisplay from "../MapDisplay";
+import LocationSelector from "./LocationSelector";
 
 const EmployerProfileForm = () => {
   const [formData, setFormData] = useState({
@@ -58,6 +59,10 @@ const EmployerProfileForm = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleLocationChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileChange = (e) => {
@@ -138,14 +143,14 @@ const EmployerProfileForm = () => {
   const logoPreview = newBase64Logo || getImageUrl(formData.LogoURL);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">Thông tin Công ty</h2>
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <h2 className="mb-4 text-xl font-semibold">Thông tin Công ty</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center space-x-4">
           <img
             src={logoPreview || "https://via.placeholder.com/150"}
             alt="Logo"
-            className="w-24 h-24 object-contain border p-1"
+            className="object-contain w-24 h-24 p-1 border"
           />
           <input
             type="file"
@@ -157,14 +162,14 @@ const EmployerProfileForm = () => {
           <button
             type="button"
             onClick={() => logoInputRef.current.click()}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
           >
             Chọn logo
           </button>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block mb-1 text-sm font-medium text-gray-700">
             Tên công ty
           </label>
           <input
@@ -176,9 +181,9 @@ const EmployerProfileForm = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Email công ty
             </label>
             <input
@@ -190,7 +195,7 @@ const EmployerProfileForm = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Điện thoại công ty
             </label>
             <input
@@ -204,7 +209,7 @@ const EmployerProfileForm = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block mb-1 text-sm font-medium text-gray-700">
             Website
           </label>
           <input
@@ -217,7 +222,7 @@ const EmployerProfileForm = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block mb-1 text-sm font-medium text-gray-700">
             Địa chỉ
           </label>
           <div className="flex space-x-2">
@@ -233,16 +238,16 @@ const EmployerProfileForm = () => {
               type="button"
               onClick={handleGeocode}
               disabled={geoLoading}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex-shrink-0"
+              className="flex-shrink-0 px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
             >
               {geoLoading ? "Đang tìm..." : "Xác minh"}
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Vĩ độ (Latitude)
             </label>
             <input
@@ -250,12 +255,12 @@ const EmployerProfileForm = () => {
               type="number"
               value={formData.Latitude || ""}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
               readOnly
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
               Kinh độ (Longitude)
             </label>
             <input
@@ -263,7 +268,7 @@ const EmployerProfileForm = () => {
               type="number"
               value={formData.Longitude || ""}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100"
+              className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm"
               readOnly
             />
           </div>
@@ -271,35 +276,14 @@ const EmployerProfileForm = () => {
 
         {mapPosition && <MapDisplay position={mapPosition} />}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Thành phố
-            </label>
-            <input
-              name="City"
-              type="text"
-              value={formData.City}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quốc gia
-            </label>
-            <input
-              name="Country"
-              type="text"
-              value={formData.Country}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-        </div>
+        <LocationSelector
+          selectedCountry={formData.Country}
+          selectedCity={formData.City}
+          onChange={handleLocationChange}
+        />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block mb-1 text-sm font-medium text-gray-700">
             Mô tả công ty
           </label>
           <textarea
@@ -314,7 +298,7 @@ const EmployerProfileForm = () => {
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
           {loading ? "Đang lưu..." : "Lưu thông tin"}
         </button>

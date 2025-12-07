@@ -474,6 +474,8 @@ const UserDetailModal = ({ user, type, onClose }) => {
                         : null
                     }
                   />
+                  <InfoItem label="Thành phố" value={user.City} />
+                  <InfoItem label="Quốc gia" value={user.Country} />
                 </>
               )}
             </div>

@@ -148,6 +148,8 @@ router.get("/users/candidates", checkAuth, checkAdminRole, async (req, res) => {
         cp.PhoneNumber,
         cp.Address,
         cp.ProfileSummary,
+        cp.City,
+        cp.Country,
         cp.Birthday,
         vip.PlanName AS CurrentVIP,
         vip.Features AS CurrentVIPFeatures,

@@ -49,6 +49,8 @@ router.put("/me", checkAuth, async (req, res) => {
     Birthday,
     Address,
     ProfileSummary,
+    City,
+    Country,
     IsSearchable,
     SpecializationIDs,
   } = req.body;
@@ -77,6 +79,8 @@ router.put("/me", checkAuth, async (req, res) => {
         .input("Birthday", sql.Date, Birthday || null)
         .input("Address", sql.NVarChar, Address || null)
         .input("ProfileSummary", sql.NText, ProfileSummary || null)
+        .input("City", sql.NVarChar, City || null)
+        .input("Country", sql.NVarChar, Country || null)
         .input("IsSearchable", sql.Bit, IsSearchable ?? 0).query(`
           MERGE INTO CandidateProfiles AS target
           USING (VALUES (@UserID)) AS source (UserID)
@@ -88,10 +92,12 @@ router.put("/me", checkAuth, async (req, res) => {
               Birthday = @Birthday,
               Address = @Address,
               ProfileSummary = @ProfileSummary,
+              City = @City,
+              Country = @Country,
               IsSearchable = @IsSearchable
           WHEN NOT MATCHED BY TARGET THEN
-            INSERT (UserID, FullName, PhoneNumber, Birthday, Address, ProfileSummary, IsSearchable)
-            VALUES (@UserID, @FullName, @PhoneNumber, @Birthday, @Address, @ProfileSummary, @IsSearchable);
+            INSERT (UserID, FullName, PhoneNumber, Birthday, Address, ProfileSummary, City, Country, IsSearchable)
+            VALUES (@UserID, @FullName, @PhoneNumber, @Birthday, @Address, @ProfileSummary, @City, @Country, @IsSearchable);
         `);
 
       if (SpecializationIDs && Array.isArray(SpecializationIDs)) {

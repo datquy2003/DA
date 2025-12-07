@@ -79,6 +79,8 @@ CREATE TABLE CandidateProfiles (
     Birthday date,
     Address nvarchar(255),
     ProfileSummary ntext,
+    City nvarchar(100),
+    Country nvarchar(100),
     IsSearchable bit DEFAULT 0,
 	LastPushedAt datetime,
 	PushTopCount int DEFAULT 0,

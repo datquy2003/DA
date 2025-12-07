@@ -18,7 +18,6 @@ import {
   FiHome,
   FiClipboard,
   FiUsers,
-  FiSearch,
   FiLock,
   FiStar,
 } from "react-icons/fi";
@@ -365,9 +364,6 @@ const EmployerHeader = () => {
           </HeaderNavLink>
           <HeaderNavLink to="/employer/applicants">
             <FiUsers className="mr-1.5" /> Ứng viên
-          </HeaderNavLink>
-          <HeaderNavLink to="/employer/search-candidates">
-            <FiSearch className="mr-1.5" /> Tìm kiếm
           </HeaderNavLink>
           <HeaderNavLink to="/employer/subscription">
             <FiPackage className="mr-1.5" /> Gói VIP

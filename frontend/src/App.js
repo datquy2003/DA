@@ -34,7 +34,6 @@ const FavoriteJobs = () => <div>Trang Việc yêu thích</div>;
 const BlockedCompanies = () => <div>Trang Công ty đã chặn</div>;
 const JobManagementEmployer = () => <div>Trang Quản lý tin tuyển dụng</div>;
 const ApplicantManagement = () => <div>Trang Ứng viên ứng tuyển</div>;
-const SearchCandidates = () => <div>Trang Tìm kiếm ứng viên</div>;
 
 const Messages = () => <div>Trang Nhắn tin</div>;
 
@@ -123,10 +122,6 @@ function App() {
 
         <Route path="employer/jobs" element={<JobManagementEmployer />} />
         <Route path="employer/applicants" element={<ApplicantManagement />} />
-        <Route
-          path="employer/search-candidates"
-          element={<SearchCandidates />}
-        />
         <Route
           path="employer/subscription"
           element={<EmployerSubscription />}
