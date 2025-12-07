@@ -18,6 +18,7 @@ import jobRoutes from "./src/routes/jobRoutes.js";
 import vipFeatureRoutes from "./src/routes/vipFeatureRoutes.js";
 import notificationRoutes from "./src/routes/notificationRoutes.js";
 import { startVipExpiryScheduler } from "./src/services/vipExpiryScheduler.js";
+import cvRoutes from "./src/routes/cvRoutes.js";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/cvs", cvRoutes);
 app.get("/api/test", (req, res) => {
   res.status(200).json({ message: "Backend đã kết nối thành công!" });
 });

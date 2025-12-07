@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { FiAlertTriangle, FiInfo } from "react-icons/fi";
 
 const ConfirmationModal = ({
@@ -13,9 +14,9 @@ const ConfirmationModal = ({
 }) => {
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-50 p-4 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
+      <div className="w-full max-w-md overflow-hidden transition-all transform scale-100 bg-white shadow-2xl rounded-xl">
         <div className="p-6 text-center">
           <div
             className={`mx-auto flex items-center justify-center h-14 w-14 rounded-full mb-4 ${
@@ -23,20 +24,20 @@ const ConfirmationModal = ({
             }`}
           >
             {isDanger ? (
-              <FiAlertTriangle className="h-8 w-8 text-red-600" />
+              <FiAlertTriangle className="w-8 h-8 text-red-600" />
             ) : (
-              <FiInfo className="h-8 w-8 text-blue-600" />
+              <FiInfo className="w-8 h-8 text-blue-600" />
             )}
           </div>
 
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+          <h3 className="mb-2 text-xl font-bold text-gray-900">{title}</h3>
 
-          <p className="text-gray-500 text-sm mb-6">{message}</p>
+          <p className="mb-6 text-sm text-gray-500">{message}</p>
 
           <div className="flex justify-center space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium transition-colors focus:outline-none"
+              className="px-4 py-2 font-medium text-gray-700 transition-colors bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none"
             >
               {cancelText}
             </button>
@@ -58,6 +59,9 @@ const ConfirmationModal = ({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return modalContent;
+  return createPortal(modalContent, document.body);
 };
 
 export default ConfirmationModal;

@@ -11,6 +11,7 @@ import MainLayout from "./components/MainLayout";
 import ProfileEdit from "./pages/ProfileEdit";
 import VerifyEmail from "./pages/VerifyEmail";
 import ChangePassword from "./pages/ChangePassword";
+import CvManagement from "./pages/candidate/CvManagement";
 
 import AdminLayout from "./pages/admin/AdminLayout";
 import UserManagement from "./pages/admin/UserManagement";
@@ -28,7 +29,6 @@ import PaymentResult from "./pages/PaymentResult";
 const HomeCandidate = () => <div>Trang chủ ỨNG VIÊN (Role 4)</div>;
 const HomeEmployer = () => <div>Trang chủ NHÀ TUYỂN DỤNG (Role 3)</div>;
 
-const CvManagement = () => <div>Trang Quản lý CV</div>;
 const AppliedJobs = () => <div>Trang Việc đã ứng tuyển</div>;
 const FavoriteJobs = () => <div>Trang Việc yêu thích</div>;
 const BlockedCompanies = () => <div>Trang Công ty đã chặn</div>;

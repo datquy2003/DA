@@ -1,9 +1,9 @@
 import sql from "mssql";
 import { DEFAULT_LIMITS } from "../config/limitConstants.js";
 
-const DEFAULT_CV_LIMIT = DEFAULT_LIMITS?.CANDIDATE?.CV_STORAGE || 0;
+export const DEFAULT_CV_LIMIT = DEFAULT_LIMITS?.CANDIDATE?.CV_STORAGE || 0;
 
-const normalizeLimit = (limit) => {
+export const normalizeCandidateCvLimit = (limit) => {
   if (typeof limit === "number" && limit > 0) return limit;
   if (typeof limit === "string") {
     const parsed = parseInt(limit, 10);
@@ -16,7 +16,7 @@ const normalizeLimit = (limit) => {
 
 export const enforceCandidateCvLimit = async (dbConnection, userId, limit) => {
   if (!dbConnection?.request || !userId) return;
-  const normalizedLimit = normalizeLimit(limit);
+  const normalizedLimit = normalizeCandidateCvLimit(limit);
 
   const request = dbConnection.request();
   await request
@@ -25,7 +25,12 @@ export const enforceCandidateCvLimit = async (dbConnection, userId, limit) => {
       WITH OrderedCVs AS (
         SELECT 
           CVID,
-          ROW_NUMBER() OVER (ORDER BY CreatedAt ASC, CVID ASC) AS RowNum
+          ROW_NUMBER() OVER (
+            ORDER BY 
+              IsDefault DESC, 
+              CreatedAt ASC, 
+              CVID ASC
+          ) AS RowNum
         FROM CVs
         WHERE UserID = @UserID
       )

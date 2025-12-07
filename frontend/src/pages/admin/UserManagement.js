@@ -21,6 +21,7 @@ import {
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/modals/ConfirmationModal";
 import { formatCurrency } from "../../utils/formatCurrency";
+import { formatDate } from "../../utils/formatDate";
 
 const VipHistory = ({ userId }) => {
   const [history, setHistory] = useState([]);
@@ -39,9 +40,6 @@ const VipHistory = ({ userId }) => {
     };
     fetchHistory();
   }, [userId]);
-
-  const formatDate = (dateString) =>
-    new Date(dateString).toLocaleDateString("vi-VN", { timeZone: "UTC" });
 
   const getVietnamTime = () => {
     const now = new Date();

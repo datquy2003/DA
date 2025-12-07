@@ -1,13 +1,7 @@
 import React from "react";
 import { FiClock, FiStar } from "react-icons/fi";
 import { formatCurrency } from "../utils/formatCurrency";
-
-const formatDate = (dateString) => {
-  if (!dateString) return null;
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("vi-VN", { timeZone: "UTC" });
-};
+import { formatDate } from "../utils/formatDate";
 
 const renderFeatureList = (features) => {
   if (!features) return null;
@@ -107,7 +101,10 @@ const ActivePlanCard = ({ plan, isVip, fallbackPlan, roleLabel }) => {
               : displayPlan.Limit_CVStorage
           }
         />
-        <LimitBadge label="Đẩy top/ngày" value={displayPlan.Limit_PushTopDaily} />
+        <LimitBadge
+          label="Đẩy top/ngày"
+          value={displayPlan.Limit_PushTopDaily}
+        />
         {roleLabel === "tuyển dụng" && (
           <LimitBadge label="Kho CV" value={displayPlan.Limit_CVStorage} />
         )}

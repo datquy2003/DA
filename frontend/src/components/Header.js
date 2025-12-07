@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getImageUrl } from "../utils/urlHelper";
 import { notificationApi } from "../api/notificationApi";
+import { formatDate } from "../utils/formatDate";
 
 import {
   FiBell,
@@ -40,13 +41,6 @@ const HeaderNavLink = ({ to, children }) => {
       {children}
     </NavLink>
   );
-};
-
-const formatTime = (val) => {
-  if (!val) return "";
-  const date = new Date(val);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("vi-VN", { timeZone: "UTC" });
 };
 
 const NotificationBell = () => {
@@ -174,7 +168,7 @@ const NotificationBell = () => {
                   </p>
                   <div className="flex items-center justify-between mt-2">
                     <span className="text-xs text-gray-500">
-                      {formatTime(item.CreatedAt)}
+                      {formatDate(item.CreatedAt)}
                     </span>
                     <div className="flex items-center gap-3 text-xs">
                       {!item.IsRead && (
