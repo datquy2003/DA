@@ -4,6 +4,7 @@ import { authApi } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
 import { FiUser, FiBriefcase } from "react-icons/fi";
 import UnfinishedRegistrationModal from "../components/modals/UnfinishedRegistrationModal";
+import bannerLogin from "../assets/bannerLogin.png";
 
 const ROLE_EMPLOYER = 3;
 const ROLE_CANDIDATE = 4;
@@ -72,63 +73,74 @@ const ChooseRole = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 relative">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
-        <h2 className="text-3xl font-bold text-center mb-4 text-gray-800">
-          Chỉ một bước nữa!
-        </h2>
-        <p className="text-gray-600 mb-8">
-          Hãy cho chúng tôi biết bạn tham gia với tư cách nào.
-        </p>
+    <div
+      className="relative flex items-center justify-center min-h-screen bg-gray-900"
+      style={{
+        backgroundImage: `url(${bannerLogin})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="absolute inset-0 bg-black/30"></div>
 
-        {firebaseUser?.providerData[0].providerId === "password" &&
-          !firebaseUser.emailVerified && (
-            <div
-              className="p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50"
-              role="alert"
-            >
-              <span className="font-medium">Cảnh báo!</span> Bạn cần xác thực
-              email trước khi tiếp tục. Vui lòng kiểm tra hộp thư đến của bạn.
-              <button
-                onClick={handleVerificationCheck}
-                disabled={loading}
-                className="mt-3 w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition duration-300 ease-in-out font-semibold text-sm disabled:opacity-50"
+      <div className="relative z-10 w-full max-w-2xl px-4 sm:px-8 lg:px-12">
+        <div className="w-full p-10 text-center border shadow-2xl bg-inherit backdrop-blur-sm border-white/30 rounded-2xl">
+          <h2 className="mb-4 text-4xl font-bold text-center text-white">
+            Chỉ một bước nữa!
+          </h2>
+          <p className="mb-8 text-white/80">
+            Hãy cho chúng tôi biết bạn tham gia với tư cách nào.
+          </p>
+
+          {firebaseUser?.providerData[0].providerId === "password" &&
+            !firebaseUser.emailVerified && (
+              <div
+                className="p-4 mb-4 text-sm text-yellow-100 border rounded-lg bg-yellow-900/60 border-yellow-200/30"
+                role="alert"
               >
-                {loading
-                  ? "Đang kiểm tra..."
-                  : "Tôi đã xác thực. Kiểm tra lại."}
-              </button>
-            </div>
+                <span className="font-medium">Cảnh báo!</span> Bạn cần xác thực
+                email trước khi tiếp tục. Vui lòng kiểm tra hộp thư đến của bạn.
+                <button
+                  onClick={handleVerificationCheck}
+                  disabled={loading}
+                  className="w-full py-2 mt-3 text-sm font-semibold text-white transition duration-300 ease-in-out bg-blue-500 rounded-md hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {loading
+                    ? "Đang kiểm tra..."
+                    : "Tôi đã xác thực. Kiểm tra lại."}
+                </button>
+              </div>
+            )}
+
+          <div className="space-y-4">
+            <button
+              onClick={() => handleRoleSelect(ROLE_CANDIDATE)}
+              disabled={loading}
+              className="flex items-center justify-center w-full py-3 text-lg font-semibold text-white transition duration-300 ease-in-out bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+            >
+              <FiUser className="mr-2" /> Tôi là Ứng viên (Tìm việc)
+            </button>
+
+            <button
+              onClick={() => handleRoleSelect(ROLE_EMPLOYER)}
+              disabled={loading}
+              className="flex items-center justify-center w-full py-3 text-lg font-semibold text-white transition duration-300 ease-in-out bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50"
+            >
+              <FiBriefcase className="mr-2" /> Tôi là Nhà tuyển dụng (Đăng tin)
+            </button>
+          </div>
+
+          {error && (
+            <p className="mt-4 text-sm text-center text-red-300">{error}</p>
           )}
 
-        <div className="space-y-4">
           <button
-            onClick={() => handleRoleSelect(ROLE_CANDIDATE)}
-            disabled={loading}
-            className="w-full bg-green-600 text-white py-3 rounded-md hover:bg-green-700 transition duration-300 ease-in-out font-semibold text-lg disabled:opacity-50 flex justify-center items-center"
+            onClick={() => setShowExitModal(true)}
+            className="mt-6 text-sm text-white/80 hover:underline"
           >
-            <FiUser className="mr-2" /> Tôi là Ứng viên (Tìm việc)
-          </button>
-
-          <button
-            onClick={() => handleRoleSelect(ROLE_EMPLOYER)}
-            disabled={loading}
-            className="w-full bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition duration-300 ease-in-out font-semibold text-lg disabled:opacity-50 flex justify-center items-center"
-          >
-            <FiBriefcase className="mr-2" /> Tôi là Nhà tuyển dụng (Đăng tin)
+            Quay lại (Đăng xuất)
           </button>
         </div>
-
-        {error && (
-          <p className="text-sm text-red-600 text-center mt-4">{error}</p>
-        )}
-
-        <button
-          onClick={() => setShowExitModal(true)}
-          className="mt-6 text-sm text-gray-600 hover:underline"
-        >
-          Quay lại (Đăng xuất)
-        </button>
       </div>
       <UnfinishedRegistrationModal
         isOpen={showExitModal}
