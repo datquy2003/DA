@@ -16,6 +16,8 @@ import testRoutes from "./src/routes/testRoutes.js";
 import paymentRoutes from "./src/routes/paymentRoutes.js";
 import jobRoutes from "./src/routes/jobRoutes.js";
 import vipFeatureRoutes from "./src/routes/vipFeatureRoutes.js";
+import notificationRoutes from "./src/routes/notificationRoutes.js";
+import { startVipExpiryScheduler } from "./src/services/vipExpiryScheduler.js";
 
 dotenv.config();
 
@@ -38,6 +40,7 @@ app.use("/api/vip-features", vipFeatureRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.get("/api/test", (req, res) => {
   res.status(200).json({ message: "Backend đã kết nối thành công!" });
 });
@@ -47,6 +50,7 @@ app.listen(port, async () => {
     await sql.connect(sqlConfig);
     console.log("✅ Đã kết nối thành công tới CSDL (SQL Server)!");
     console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
+    startVipExpiryScheduler();
   } catch (err) {
     console.error("❌ LỖI KHI KẾT NỐI CSDL:", err.message);
   }

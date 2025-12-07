@@ -2,6 +2,7 @@ import express from "express";
 import sql from "mssql";
 import { sqlConfig } from "../config/db.js";
 import { checkAuth } from "../middleware/authMiddleware.js";
+import { enforceCandidateCvLimit } from "../services/cvStorageService.js";
 import admin from "../config/firebaseAdmin.js";
 
 const router = express.Router();
@@ -210,6 +211,14 @@ router.get("/me", checkAuth, async (req, res) => {
           .query(
             "UPDATE Users SET UpdatedAt = GETDATE(), IsVerified = @IsVerified WHERE FirebaseUserID = @FirebaseUserID"
           );
+      }
+
+      if (userFromDB.RoleID === 4) {
+        await enforceCandidateCvLimit(
+          transaction,
+          firebaseUid,
+          userResult.recordset[0]?.CurrentVIPLimitCVStorage
+        );
       }
 
       await transaction.commit();

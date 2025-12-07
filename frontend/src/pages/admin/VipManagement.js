@@ -12,12 +12,18 @@ import {
   FiClock,
   FiZap,
   FiCheck,
-  FiArrowRight,
 } from "react-icons/fi";
 import toast from "react-hot-toast";
 import ConfirmationModal from "../../components/modals/ConfirmationModal";
 import { formatCurrency } from "../../utils/formatCurrency";
-import { FEATURE_KEYS, ONE_TIME_FEATURES } from "../../constants/vipFeatures";
+import {
+  FEATURE_KEYS,
+  ONE_TIME_FEATURES,
+  buildFixedFeatureText,
+} from "../../constants/vipFeatures";
+
+const PRICE_MIN = 15000;
+const PRICE_MAX = 99999999;
 
 const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
   const [mode, setMode] = useState("SUBSCRIPTION");
@@ -86,8 +92,35 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
   useEffect(() => {
     if (mode !== "ONE_TIME") {
       setSelectedFeatureKey(null);
+      if (!pkgToEdit) {
+        setFormData((prev) => ({ ...prev, Features: "" }));
+      }
+    } else if (!selectedFeatureKey && !pkgToEdit) {
+      setFormData((prev) => ({ ...prev, Features: "" }));
     }
-  }, [mode]);
+  }, [mode, pkgToEdit, selectedFeatureKey]);
+
+  useEffect(() => {
+    if (mode !== "SUBSCRIPTION") return;
+    const limitJob = parseInt(formData.Limit_JobPostDaily) || 0;
+    const limitPush = parseInt(formData.Limit_PushTopDaily) || 0;
+    const limitCv = parseInt(formData.Limit_CVStorage) || 0;
+    const nextFeatures = buildFixedFeatureText(roleId, {
+      Limit_JobPostDaily: limitJob,
+      Limit_PushTopDaily: limitPush,
+      Limit_CVStorage: limitCv,
+    });
+    if (formData.Features !== nextFeatures) {
+      setFormData((prev) => ({ ...prev, Features: nextFeatures }));
+    }
+  }, [
+    mode,
+    roleId,
+    formData.Limit_JobPostDaily,
+    formData.Limit_PushTopDaily,
+    formData.Limit_CVStorage,
+    formData.Features,
+  ]);
 
   const isEmployer = roleId === 3;
   const availableOneTimeFeatures = ONE_TIME_FEATURES[roleId] || [];
@@ -115,14 +148,36 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
     setFormData((prev) => ({
       ...prev,
       PlanName: prev.PlanName || feature.suggestedName,
-      Features: prev.Features || feature.suggestedFeatures,
+      Features: feature.suggestedFeatures,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (mode === "ONE_TIME" && !selectedFeatureKey) {
+    const effectiveFeatureKey =
+      selectedFeatureKey ||
+      (pkgToEdit?.Limit_ViewApplicantCount > 0
+        ? FEATURE_KEYS.CANDIDATE_COMPETITOR_INSIGHT
+        : pkgToEdit?.Limit_RevealCandidatePhone > 0
+        ? FEATURE_KEYS.EMPLOYER_REVEAL_PHONE
+        : null);
+
+    if (mode === "ONE_TIME" && !effectiveFeatureKey) {
       toast.error("Vui lòng chọn tính năng mua 1 lần cho gói dịch vụ.");
+      return;
+    }
+
+    const numericPrice = parseFloat(formData.Price.replace(/\./g, ""));
+    if (Number.isNaN(numericPrice)) {
+      toast.error("Giá không hợp lệ.");
+      return;
+    }
+    if (numericPrice < PRICE_MIN || numericPrice > PRICE_MAX) {
+      toast.error(
+        `Giá phải nằm trong khoảng ${PRICE_MIN.toLocaleString(
+          "vi-VN"
+        )} - ${PRICE_MAX.toLocaleString("vi-VN")} VNĐ.`
+      );
       return;
     }
 
@@ -135,28 +190,39 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
 
       const limitView =
         mode === "ONE_TIME"
-          ? selectedFeatureKey === FEATURE_KEYS.CANDIDATE_COMPETITOR_INSIGHT
+          ? effectiveFeatureKey === FEATURE_KEYS.CANDIDATE_COMPETITOR_INSIGHT
             ? 1
             : 0
           : parseInt(formData.Limit_ViewApplicantCount) || 0;
       const limitReveal =
         mode === "ONE_TIME"
-          ? selectedFeatureKey === FEATURE_KEYS.EMPLOYER_REVEAL_PHONE
+          ? effectiveFeatureKey === FEATURE_KEYS.EMPLOYER_REVEAL_PHONE
             ? 1
             : 0
           : parseInt(formData.Limit_RevealCandidatePhone) || 0;
 
+      const limitJob = parseInt(formData.Limit_JobPostDaily) || 0;
+      const limitPush = parseInt(formData.Limit_PushTopDaily) || 0;
+      const limitCv = parseInt(formData.Limit_CVStorage) || 0;
+
       const payload = {
         ...formData,
         RoleID: roleId,
-        Price: parseFloat(formData.Price.replace(/\./g, "")),
+        Price: numericPrice,
         DurationInDays:
           mode === "SUBSCRIPTION" ? parseInt(formData.DurationInDays) : 0,
         PlanType: mode,
-        Features: cleanedFeatures,
-        Limit_JobPostDaily: parseInt(formData.Limit_JobPostDaily) || 0,
-        Limit_PushTopDaily: parseInt(formData.Limit_PushTopDaily) || 0,
-        Limit_CVStorage: parseInt(formData.Limit_CVStorage) || 0,
+        Features:
+          mode === "SUBSCRIPTION"
+            ? buildFixedFeatureText(roleId, {
+                Limit_JobPostDaily: limitJob,
+                Limit_PushTopDaily: limitPush,
+                Limit_CVStorage: limitCv,
+              })
+            : cleanedFeatures,
+        Limit_JobPostDaily: limitJob,
+        Limit_PushTopDaily: limitPush,
+        Limit_CVStorage: limitCv,
         Limit_ViewApplicantCount: limitView,
         Limit_RevealCandidatePhone: limitReveal,
       };
@@ -275,9 +341,6 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
                   <h4 className="text-sm font-bold text-purple-800">
                     Chọn tính năng mua 1 lần
                   </h4>
-                  <span className="text-[11px] uppercase font-semibold text-purple-600">
-                    Áp dụng theo từng API
-                  </span>
                 </div>
                 {availableOneTimeFeatures.length > 0 ? (
                   <div className="space-y-3">
@@ -312,17 +375,9 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
                               <FiCheck className="mt-1 text-purple-600" />
                             )}
                           </div>
-                          <div className="flex items-center mt-3 text-xs font-semibold text-purple-600">
-                            <FiArrowRight className="mr-1" />
-                            API: {feature.apiPath}
-                          </div>
                         </button>
                       );
                     })}
-                    <p className="text-[11px] text-gray-600">
-                      * Các gói một lần sẽ tự động gán đúng quyền hạn để liên
-                      kết với API tương ứng.
-                    </p>
                   </div>
                 ) : (
                   <p className="text-sm text-gray-600">
@@ -391,15 +446,21 @@ const VipPackageModal = ({ pkgToEdit, roleId, onClose, onSuccess }) => {
                 name="Features"
                 rows="3"
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                  isEditingOneTime ? "bg-gray-100 cursor-not-allowed" : ""
+                  mode === "SUBSCRIPTION"
+                    ? "bg-gray-100 cursor-not-allowed"
+                    : isEditingOneTime
+                    ? "bg-gray-100 cursor-not-allowed"
+                    : ""
                 }`}
-                disabled={isEditingOneTime}
+                disabled={mode === "SUBSCRIPTION" || isEditingOneTime}
                 value={formData.Features}
                 onChange={handleChange}
               ></textarea>
-              <p className="mt-1 text-xs text-gray-500">
-                Xuống dòng để tạo gạch đầu dòng.
-              </p>
+              {mode !== "SUBSCRIPTION" && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Xuống dòng để tạo gạch đầu dòng.
+                </p>
+              )}
             </div>
           </form>
         </div>

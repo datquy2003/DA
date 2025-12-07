@@ -37,7 +37,6 @@ const ApplicantManagement = () => <div>Trang Ứng viên ứng tuyển</div>;
 const SearchCandidates = () => <div>Trang Tìm kiếm ứng viên</div>;
 
 const Messages = () => <div>Trang Nhắn tin</div>;
-const Notifications = () => <div>Trang Thông báo</div>;
 
 const RoleBasedHome = () => {
   const { appUser } = useAuth();
@@ -106,7 +105,6 @@ function App() {
       >
         <Route index element={<RoleBasedHome />} />
         <Route path="messages" element={<Messages />} />
-        <Route path="notifications" element={<Notifications />} />
         <Route path="profile-edit" element={<ProfileEdit />} />
         <Route path="change-password" element={<ChangePassword />} />
         <Route path="payment/:result" element={<PaymentResult />} />

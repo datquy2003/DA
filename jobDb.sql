@@ -133,6 +133,7 @@ CREATE TABLE CVs (
     CVName nvarchar(100) NOT NULL,
     CVFileUrl nvarchar(MAX) NOT NULL, 
     IsDefault bit DEFAULT 0,
+    IsLocked bit NOT NULL DEFAULT 0,
     CreatedAt datetime DEFAULT GETDATE(),
     
     CONSTRAINT FK_CVs_Users FOREIGN KEY (UserID) REFERENCES Users(FirebaseUserID) ON DELETE CASCADE
@@ -242,6 +243,8 @@ CREATE TABLE Notifications (
     UserID nvarchar(128) NOT NULL,
     Message nvarchar(500) NOT NULL,
     LinkURL nvarchar(MAX), 
+    Type nvarchar(100) NOT NULL DEFAULT 'GENERAL',
+    ReferenceID nvarchar(128),
     IsRead bit DEFAULT 0,
     CreatedAt datetime DEFAULT GETDATE(),
     
@@ -319,6 +322,7 @@ CREATE TABLE VipOneTimeUsage (
     UserID nvarchar(128) NOT NULL,
     FeatureType nvarchar(100) NOT NULL,
     ReferenceID nvarchar(128),
+    MetadataJson nvarchar(MAX),
     ConsumedFromSubscriptionID int,
     UsedAt datetime DEFAULT GETDATE(),
 

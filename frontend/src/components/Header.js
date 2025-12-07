@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, NavLink } from "react-router-dom";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getImageUrl } from "../utils/urlHelper";
+import { notificationApi } from "../api/notificationApi";
 
 import {
   FiBell,
@@ -42,6 +43,172 @@ const HeaderNavLink = ({ to, children }) => {
   );
 };
 
+const formatTime = (val) => {
+  if (!val) return "";
+  const date = new Date(val);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("vi-VN", { timeZone: "UTC" });
+};
+
+const NotificationBell = () => {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const containerRef = useRef(null);
+  const unreadCount = items.filter((item) => !item.IsRead).length;
+
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await notificationApi.getNotifications(10);
+      setItems(res.data || []);
+    } catch (error) {
+      console.error("Lỗi lấy thông báo:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && items.length === 0) {
+      fetchNotifications();
+    }
+  };
+
+  const handleMarkRead = async (id) => {
+    try {
+      await notificationApi.markAsRead(id);
+      setItems((prev) =>
+        prev.map((item) =>
+          item.NotificationID === id ? { ...item, IsRead: true } : item
+        )
+      );
+    } catch (error) {
+      console.error("Lỗi cập nhật thông báo:", error);
+    }
+  };
+
+  const handleMarkAll = async () => {
+    try {
+      await notificationApi.markAllRead();
+      setItems((prev) => prev.map((item) => ({ ...item, IsRead: true })));
+    } catch (error) {
+      console.error("Lỗi đánh dấu tất cả thông báo:", error);
+    }
+  };
+
+  const navigate = useNavigate();
+
+  const handleNavigate = (item) => {
+    if (item.LinkURL) {
+      navigate(item.LinkURL);
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={toggle}
+        className="relative flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600"
+      >
+        <FiBell size={22} />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1.5 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full px-1.5">
+            {unreadCount}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="absolute right-0 z-50 mt-3 bg-white border border-gray-200 shadow-xl w-80 rounded-xl">
+          <div className="flex items-center justify-between px-4 py-2 border-b">
+            <p className="text-sm font-semibold text-gray-700">
+              Thông báo gần đây
+            </p>
+            <button
+              onClick={handleMarkAll}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Đánh dấu đã đọc
+            </button>
+          </div>
+          <div className="overflow-y-auto max-h-96">
+            {loading ? (
+              <p className="py-6 text-sm text-center text-gray-500">
+                Đang tải...
+              </p>
+            ) : items.length === 0 ? (
+              <p className="py-6 text-sm text-center text-gray-500">
+                Chưa có thông báo nào.
+              </p>
+            ) : (
+              items.map((item) => (
+                <div
+                  key={item.NotificationID}
+                  className={`px-4 py-3 border-b last:border-b-0 ${
+                    item.IsRead ? "bg-white" : "bg-blue-50"
+                  }`}
+                >
+                  <p className="text-sm text-gray-800 whitespace-pre-line">
+                    {item.Message}
+                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs text-gray-500">
+                      {formatTime(item.CreatedAt)}
+                    </span>
+                    <div className="flex items-center gap-3 text-xs">
+                      {!item.IsRead && (
+                        <button
+                          onClick={() => handleMarkRead(item.NotificationID)}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Đã đọc
+                        </button>
+                      )}
+                      {item.LinkURL && (
+                        <button
+                          onClick={() => {
+                            handleNavigate(item);
+                            handleMarkRead(item.NotificationID);
+                          }}
+                          className="font-semibold text-blue-600 hover:underline"
+                        >
+                          Xem
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ProfileMenu = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { appUser, logout, firebaseUser } = useAuth();
@@ -78,23 +245,16 @@ const ProfileMenu = () => {
   );
 
   return (
-    <div className="flex items-center space-x-5">
+    <div className="flex items-center space-x-3">
       {!isAdmin && (
         <Link
           to="/messages"
-          className="relative text-gray-600 hover:text-blue-600"
+          className="relative flex items-center justify-center w-8 h-8 text-gray-600 hover:text-blue-600"
         >
-          <FiMessageSquare size={24} />
+          <FiMessageSquare size={22} />
         </Link>
       )}
-      {!isAdmin && (
-        <Link
-          to="/notifications"
-          className="relative text-gray-600 hover:text-blue-600"
-        >
-          <FiBell size={24} />
-        </Link>
-      )}
+      {!isAdmin && <NotificationBell />}
 
       <div className="relative" ref={dropdownRef}>
         <button

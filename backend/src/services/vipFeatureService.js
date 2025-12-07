@@ -90,20 +90,22 @@ const insertUsage = async (
   userId,
   featureKey,
   referenceId,
-  subscriptionId
+  subscriptionId,
+  extraData = {}
 ) => {
   const request = pool
     .request()
     .input("UserID", sql.NVarChar, userId)
     .input("FeatureType", sql.NVarChar, featureKey)
     .input("ReferenceID", sql.NVarChar, referenceId || null)
-    .input("SubscriptionID", sql.Int, subscriptionId || null);
+    .input("SubscriptionID", sql.Int, subscriptionId || null)
+    .input("MetaJson", sql.NVarChar, JSON.stringify(extraData || {}));
 
   const result = await request.query(
     `
-      INSERT INTO VipOneTimeUsage (UserID, FeatureType, ReferenceID, ConsumedFromSubscriptionID)
+      INSERT INTO VipOneTimeUsage (UserID, FeatureType, ReferenceID, ConsumedFromSubscriptionID, MetadataJson)
       OUTPUT INSERTED.*
-      VALUES (@UserID, @FeatureType, @ReferenceID, @SubscriptionID)
+      VALUES (@UserID, @FeatureType, @ReferenceID, @SubscriptionID, @MetaJson)
     `
   );
 
@@ -115,6 +117,7 @@ export const ensureVipFeatureAvailability = async ({
   userId,
   featureKey,
   referenceId,
+  metadata,
 }) => {
   const subscription = await fetchActiveSubscription(pool, userId);
 
@@ -171,7 +174,8 @@ export const ensureVipFeatureAvailability = async ({
       userId,
       featureKey,
       referenceId,
-      subscription.SubscriptionID
+      subscription.SubscriptionID,
+      metadata
     );
 
     return {

@@ -3,6 +3,33 @@ import Stripe from "stripe";
 import sql from "mssql";
 import { sqlConfig } from "../config/db.js";
 import { checkAuth } from "../middleware/authMiddleware.js";
+import { enforceCandidateCvLimit } from "../services/cvStorageService.js";
+
+const NOTIF_TYPE_ONE_TIME = "VIP_ONE_TIME_PURCHASE";
+const formatCurrencyVN = (value) =>
+  new Intl.NumberFormat("vi-VN").format(Number(value) || 0);
+
+const getVipLinkByRole = (roleId) =>
+  roleId === 3 ? "/employer/subscription" : "/candidate/subscription";
+
+const buildOneTimeMessage = (plan, amount, metadata) => {
+  const money = formatCurrencyVN(amount) + "₫";
+  if (plan.RoleID === 4) {
+    let extra = "";
+    if (metadata?.jobTitle) {
+      extra = ` vào công việc "${metadata.jobTitle}"`;
+    }
+    return `Bạn đã trả ${money} để sử dụng tính năng "${plan.PlanName}" nhằm xem thống kê ứng tuyển${extra}.`;
+  }
+  if (plan.RoleID === 3) {
+    let extra = "";
+    if (metadata?.candidateName) {
+      extra = ` của ứng viên "${metadata.candidateName}"`;
+    }
+    return `Bạn đã trả ${money} để sử dụng tính năng "${plan.PlanName}" nhằm xem liên hệ ứng viên${extra}.`;
+  }
+  return `Bạn đã trả ${money} để sử dụng dịch vụ "${plan.PlanName}".`;
+};
 
 const router = express.Router();
 
@@ -154,6 +181,54 @@ router.post("/verify-payment", checkAuth, async (req, res) => {
            @Snapshot_JobPostDaily, @Snapshot_PushTopDaily, @Snapshot_CVStorage,
            @Snapshot_ViewApplicantCount, @Snapshot_RevealCandidatePhone)
         `);
+
+      if (plan.PlanType === "ONE_TIME" || !plan.DurationInDays) {
+        const usageResult = await transaction
+          .request()
+          .input("UserID", sql.NVarChar, userId)
+          .query(
+            `
+            SELECT TOP 1 MetadataJson
+            FROM VipOneTimeUsage
+            WHERE UserID = @UserID
+            ORDER BY UsedAt DESC
+          `
+          );
+        let metadata = {};
+        try {
+          if (usageResult.recordset[0]?.MetadataJson) {
+            metadata = JSON.parse(usageResult.recordset[0].MetadataJson);
+          }
+        } catch (err) {
+          metadata = {};
+        }
+
+        await transaction
+          .request()
+          .input("UserID", sql.NVarChar, userId)
+          .input(
+            "Message",
+            sql.NVarChar,
+            buildOneTimeMessage(plan, plan.Price, metadata)
+          )
+          .input("LinkURL", sql.NVarChar, getVipLinkByRole(plan.RoleID))
+          .input("Type", sql.NVarChar, NOTIF_TYPE_ONE_TIME)
+          .input("ReferenceID", sql.NVarChar, plan.PlanID.toString())
+          .query(
+            `
+            INSERT INTO Notifications (UserID, Message, LinkURL, Type, ReferenceID)
+            VALUES (@UserID, @Message, @LinkURL, @Type, @ReferenceID)
+          `
+          );
+      }
+
+      if (plan.RoleID === 4) {
+        await enforceCandidateCvLimit(
+          transaction,
+          userId,
+          plan.Limit_CVStorage
+        );
+      }
 
       await transaction.commit();
 
